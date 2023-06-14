@@ -1,0 +1,169 @@
+---
+title: 'A First Post Meant To Test This Out'
+date: '2023-06-14'
+tags: ['hello']
+---
+
+# A Big Title
+
+oh wow what a title. How cool is it to have your own blog where you can post content updates as you work on new ideas!
+
+## A Video Included
+
+<Video id="JzS96auqau0" />
+
+This is evo moment #37, when the beast was unleashed. Arguably the most important moment in Fighting Game Culture as it brought a lot of attention to the community from outside players
+
+## A Picture
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/gonzo.jpg" alt="gonzo" />
+
+I just love gonzo.
+
+## Some Code
+
+Check out this Typescript code for a board object in a battleship game.
+
+```ts
+import { Ship, ShipPart, ShipType } from "./Ship";
+import Tile from "./Tile";
+import Point from "./Point";
+
+class Board {
+  private _tiles: Array<Array<Tile>>;
+  private _xSize: number;
+  private _ySize: number;
+  private _fleet: Array<{ ship: Ship; startLoc: Point }>;
+  constructor(xSize: number, ySize: number) {
+    this._xSize = xSize;
+    this._ySize = ySize;
+    this._fleet = [];
+    this._tiles = [];
+    for (let x = 0; x < xSize; x++) {
+      this._tiles[x] = [];
+      for (let y = 0; y < ySize; y++) {
+        this._tiles[x][y] = new Tile();
+      }
+    }
+  }
+  #getTile(point: Point): Tile {
+    if (this.#isWithinValidBounds(point)) {
+      return this._tiles[point.x][point.y];
+    } else {
+      throw new Error("Targetting Out of Bounds");
+    }
+  }
+  #isWithinValidBounds(point: Point): boolean {
+    return !(point.x < 0 || point.x >= this._xSize || point.y < 0 || point.y >= this._ySize);
+  }
+  getTargeted(point: Point): boolean {
+    if (this.#isWithinValidBounds(point)) {
+      return this.#getTile(point).targeted;
+    } else {
+      throw new Error("Targetting Out of Bounds");
+    }
+  }
+  target(point: Point): void {
+    if (this.#isWithinValidBounds(point)) {
+      this.#getTile(point).targeted = true;
+      if (this.isOccupied(point)) {
+        const occupied = this.getOccupied(point);
+        if (occupied) {
+          occupied.damaged = true;
+        }
+      }
+    } else {
+      throw new Error("Targetting Out of Bounds");
+    }
+  }
+  getOccupied(point: Point): ShipPart | undefined {
+    return this.#getTile(point).occupiedBy;
+  }
+  isOccupied(point: Point): boolean {
+    if (this.getOccupied(point)) {
+      return true;
+    }
+    return false;
+  }
+  isValidPlacementLocation(startingLoc: Point, ship: Ship): boolean {
+    let i = 0;
+    let isValid = true;
+    const point = startingLoc.deepCopy();
+    const shipLength = ship.parts.length;
+    while (isValid && i < shipLength) {
+      isValid = this.#isWithinValidBounds(point);
+      if (isValid) {
+        isValid = !this.isOccupied(point);
+      }
+      if (ship.orientation === "NS") {
+        point.y += 1;
+      } else {
+        point.x += 1;
+      }
+      i++;
+    }
+    return isValid;
+  }
+  isAlive(): boolean {
+    let deadShips = 0;
+    this._fleet.forEach((item) => {
+      if (!item.ship.isAfloat()) {
+        deadShips++;
+      }
+    });
+    return !(deadShips === this._fleet.length);
+  }
+  isShipAlive(shipName: ShipType): boolean {
+    let foundShip: Ship | undefined;
+    this._fleet.forEach((item) => {
+      if (item.ship.shipType === shipName) {
+        foundShip = item.ship;
+      }
+    });
+    if (foundShip) {
+      return foundShip.isAfloat();
+    } else {
+      return false;
+    }
+  }
+  getNumAliveShips(): number {
+    let deadShips = 0;
+    this._fleet.forEach((item) => {
+      if (!item.ship.isAfloat()) {
+        deadShips++;
+      }
+    });
+    return this._fleet.length - deadShips;
+  }
+  getFleet(): Array<{ ship: Ship; startLoc: Point }> {
+    return this._fleet;
+  }
+  addShip(startingLoc: Point, ship: Ship): void {
+    const point = startingLoc.deepCopy();
+    if (this.isValidPlacementLocation(startingLoc, ship)) {
+      this._fleet.push({ ship, startLoc: startingLoc });
+      for (let i = 0; i < ship.parts.length; i++) {
+        this.#getTile(point).occupiedBy = ship.parts[i];
+        if (ship.orientation === "NS") {
+          point.y += 1;
+        } else {
+          point.x += 1;
+        }
+      }
+    }
+  }
+  reset(): void {
+    this._fleet = [];
+    this._tiles = [];
+    for (let x = 0; x < this._xSize; x++) {
+      this._tiles[x] = [];
+      for (let y = 0; y < this._ySize; y++) {
+        this._tiles[x][y] = new Tile();
+      }
+    }
+  }
+}
+
+export { Board };
+export default Board;
+```
