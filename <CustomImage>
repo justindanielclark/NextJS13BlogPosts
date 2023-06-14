@@ -1,0 +1,5 @@
+Example:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJSBlogPosts/main/images/gonzo.jpg" alt="gonzo" />
+
+https://raw.githubusercontent.com/justindanielclark/NextJSBlogPosts/main/images/**
