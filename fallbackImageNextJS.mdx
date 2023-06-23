@@ -1,0 +1,105 @@
+---
+title: 'A Cleaner Way To Do Images In NextJS'
+date: '2023-06-22'
+tags: ['nextjs']
+---
+
+# The Problem with Images and The web
+
+If you are using images not hosted on your server, chances are eventually the link will fail, leaving you with an ugly UI experience for your end user of a broken link. Fortunately, there is a really easy solution to this in using a client component wrapper to any image you have.
+
+## The Standard Image
+
+The base way of adding an image using Next is really straight forward. Import the Component and provide to the component its core props
+- src: the url to the image files
+- alt: the string describing the image. Useful for if it fails to load and for screen readers alike
+- width/height: its anticipated size in pixels
+- className: additional classes, if any
+- priority: whether to lazy load the image (false) or require its load on page load (true). Smart use of this can drastically speed up page load speeds
+
+Below we have an example hyper-simple use case:
+```tsx
+import {Image} from 'next/image'
+type Props = {
+  src: string,
+  alt: string,
+  width: number,
+  height: number,
+  className?: string,
+  priority: boolean
+}
+
+export default someElementWithAUser({src, alt, width, height, className, priority}: Props){
+  return (
+    <div>
+      <Image
+        src={src}
+        alt={alt}
+        crossOrigin=""
+        width={width}
+        height={height}
+        className={className ? className : ""}
+        onError={() => {
+          setIsValid(false);
+        }}
+        priority={priority}
+      />
+    </div>
+  )
+}
+```
+
+If the SRC link is incorrect, or the server it is requesting the information with responds with a 400 Status, the above implementation will provide you an ugly broken link.
+
+## The Improved Fallback
+
+Creating an image with a fallback is easy. Let's take a look at an implementation below: 
+
+```tsx
+"use client";
+import Image from "next/image";
+import { useState } from "react";
+import { BiUnlink } from "react-icons/bi";
+import { IconContext } from "react-icons";
+
+type Props = {
+  src: string;
+  alt: string;
+  crossOrigin: string;
+  width: number;
+  height: number;
+  priority: boolean;
+  className?: string;
+};
+
+export default function ImageWithFallback({ src, alt, crossOrigin, width, height, priority, className }: Props) {
+  const [isValid, setIsValid] = useState(true);
+  const content = isValid ? (
+    <Image
+      src={src}
+      alt={alt}
+      crossOrigin=""
+      width={width}
+      height={height}
+      className={className ? className : ""}
+      onError={() => {
+        setIsValid(false);
+      }}
+      priority={priority}
+    />
+  ) : (
+    <div className={className + " flex flex-row items-center justify-center bg-slate-900/30"}>
+      <IconContext.Provider value={{ color: "yellow", className: "h-10 w-10" }}>
+        <BiUnlink />
+      </IconContext.Provider>
+    </div>
+  );
+  return content;
+}
+
+```
+Whether or not an image loads in Next is client dependant. As such, we will not be able to make this a purely server based component. Additionally, we are going to want to monitor the state of whether or not an error has been noticed. On component load, we are going to assume everything is dandy, and isValid will be set to true. Upon failure to load, recognized through a call the components onError prop/listener, we will force a rerender of the component by switching isValid to false. Once detected as false, the fallback image which is hosted by the server, will be provided in the images stead.
+
+I've had great success with this pattern. Hopefully, it helps you all out too
+
+
