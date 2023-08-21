@@ -4,10 +4,8 @@ date: '2023-08-20'
 tags: ['leetcode']
 ---
 
-## Leetcode 459: Repeated Substring Pattern
-
-The Problem:
-
+## The Problem:
+```text
 Given a string s, check if it can be constructed by taking a substring of it and appending multiple copies of the substring together.
 
 Example 1:
@@ -30,7 +28,7 @@ Constraints:
 
 s.length is greater than or equal to 1 and less than or equal to 1000000
 s consists of lowercase English letters.
-
+```
 
 ## The Solution
 
@@ -45,9 +43,14 @@ function repeatedSubstringPattern(s){
   // -> -> If we can't find one that does this, return false
 }
 ```
-This seems slow and unoptimized, likely because it is. I figure there is some trick to this I haven't considered, and so I break out the pen and paper, and start to see if there is something clever I can do with pattern recognition.
+This seems slow and unoptimized, likely because it is. 
 
-My first refining idea is to declare a Map with keys that represent the chars and values of arrays which are the positions of those chars. I notice that for any string to have a valid repeating substring, none of those char's arrays could have a length of 1 and they would all have to share a common denominator. If you take a simple enough string, you can start to see some patterns emerge that might be useful:
+I figure there is some trick to this I haven't considered, and so I break out the pen and paper, and start to see if there is something clever I can do with pattern recognition.
+
+My first refining idea is to declare a Map with keys that represent the chars and values of arrays which are the positions of those chars. 
+I notice that for any string to have a valid repeating substring, none of those char's arrays could have a length of 1 and they would all have to share a common denominator. 
+
+If you take a simple enough string, you can start to see some patterns emerge that might be useful:
 ```js
 const str = 'abcabdabcabcabdabc' // abcabdabc|abcabdabc
 const charMap = new Map();
