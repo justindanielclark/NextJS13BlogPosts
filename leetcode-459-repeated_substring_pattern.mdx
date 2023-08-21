@@ -1,0 +1,134 @@
+---
+title: "Leetcode 459: Repeated Substring Pattern"
+date: '2023-08-20'
+tags: ['leetcode']
+---
+
+## Leetcode 459: Repeated Substring Pattern
+
+The Problem:
+Given a string s, check if it can be constructed by taking a substring of it and appending multiple copies of the substring together.
+
+Example 1:
+
+Input: s = "abab"
+Output: true
+Explanation: It is the substring "ab" twice.
+Example 2:
+
+Input: s = "aba"
+Output: false
+Example 3:
+
+Input: s = "abcabcabcabc"
+Output: true
+Explanation: It is the substring "abc" four times or the substring "abcabc" twice.
+ 
+
+Constraints:
+
+1 <= s.length <= 104
+s consists of lowercase English letters.
+
+## The Solution
+
+So, looking at it at face value, the first solution that pops into my mind is a quick brute force. Below I have a first take on it with some psuedocode
+```js
+function repeatedSubstringPattern(s){
+  //Reject anything that doesn't have a repeatable substring (length = 0 || 1)
+  //Store every instance of a substring where s[0] === s[i] (s.substring(0, i)) while we increment i over the string in an array
+  //Iterate over that array, and then compare each of those substrings to chunks of the larger string and see if they are equal
+  // -> if we find one that passes each check, we have a valid substring and can return true
+  // -> if we arn't equal, move onto the next substring
+  // -> -> If we can't find one that does this, return false
+}
+```
+This seems slow and unoptimized, likely because it is. I figure there is some trick to this I haven't considered, and so I break out the pen and paper, and start to see if there is something clever I can do with pattern recognition.
+
+My first refining idea is to declare a Map with keys that represent the chars and values of arrays which are the positions of those chars. I notice that for any string to have a valid repeating substring, none of those char's arrays could have a length of 1 and they would all have to share a common denominator. If you take a simple enough string, you can start to see some patterns emerge that might be useful:
+```js
+const str = 'abcabdabcabcabdabc' // abcabdabc|abcabdabc
+const charMap = new Map();
+for(let i = 0; i < str.length; i++){
+  let charArr = charMap.get(str[i]);
+  if(!charArr){
+    charArr = [];
+    charMap.set(charArr)
+  }
+  charArr.push(str[i])
+}
+// At this point, the map would have the following chars, with the following lengths and sequences
+// Char: a, Length: 6, Sequence [0,3,6,9,12,15]
+// Char: b, Length: 6, Sequence [1,4,7,10,13,16]
+// Char: c, Length: 4, Sequence [2,8,11,17]
+// Char: d, Length: 2, Sequence [5,14]
+```
+With a setup like this, we can see if the smallest char arr has a smallest common denominator in it for each of the other arrays that is greater than 1. If it doesn't, than we dont have a repeating substring. This looks promising. 
+
+However, I do start to notice that we have a bit of a problem when we go to figure out what that smallest substring might look like once we start to try out some weirder substrings.
+
+```js
+const str = 'abcdddacccaaabbbbbdabcabcdddacccaaabbbbbdabc' // abcdddacccaaabbbbbdabc|abcdddacccaaabbbbbdabc
+const charMap = new Map();
+//Iteration...
+// At this point, the map would have the following chars, with the following lengths and sequences
+// Char: a, Length: 12, Sequence [0,6,10,11,12,19,22,28,32,33,34,41]
+// Char: b, Length: 14, Sequence [1,13,14,15,16,17,20,23,35,36,37,38,39,42]
+// Char: c, Length: 10, Sequence [2,7,8,9,21,24,29,30,31,43]
+// Char: d, Length: 8, Sequence [3,4,5,18,25,26,27,40]
+```
+This is looking considerably harder to parse out where we should start with trying to find a valid substring. All of what I wrote above still is true. We have a repeating substring, the smallest sequence has a smallest common denominator that fits into all of the larger arrays, but it isn't clear how to quickly parse the sequences to figure it all out. 
+
+I shift gears but only after having recognized a few things from this exercise:
+
+1. The substrings have to end with whatever the char is at the end of the string s. We ought be focusing on those rather than when the string could start again. To see an easy example, think of how many substrings would get grabbed in my pseudocode for 'aaabaaabaaab' with one method over the other. 
+2. A string which has a substring that repeats by neccessity would have a substring that could be no bigger than half of the strings size. As such, we don't need to iterate over the whole string when creating a list of valid substrings.
+3. Any valid substring which repeats would have a length that would evenly divide into the total length of the string.
+
+With this, I note we can put in a few optimizations, and write out the psudeocode I started with originally with said optimzations in mind:
+
+```js
+function repeatedSubstringPattern(s) {
+  if (s.length === 0 || s.length === 1) return false;
+  //Grab the last character in the string, iterate over half the string and store any possible substring that starts at 0 and ends at a position that matches that character
+  let lastChar = s[s.length - 1];
+  const substrings = [];
+  for (let i = 0; i < Math.ceil(s.length / 2); i++) {
+    if (s[i] === lastChar) {
+      substrings.push(s.substring(0, i + 1));
+    }
+  }
+  //Remove any of those substrings that don't evenly divide into the total length
+  const filteredSubs = substrings.filter(
+    (sub) => (s.length / sub.length) % 1 === 0
+  );
+  //If we have none, we can return false
+  if (filteredSubs.length === 0) return false;
+  
+  //Assume none are valid, but iterate over every remaining substring and have them check the string in total in blocks. 
+  //If any substring makes it through every iteration, we got a good one, return true
+  //If none can, return false
+  let found = false;
+  for (let i = 0; i < filteredSubs.length && !found; i++) {
+    let isValid = true;
+    let j = filteredSubs[i].length;
+    for (
+      let j = filteredSubs[i].length;
+      j < s.length - 1 && isValid;
+      j += filteredSubs[i].length
+    ) {
+      if (s.substring(j, j + filteredSubs[i].length) !== filteredSubs[i]) {
+        isValid = false;
+        break;
+      }
+    }
+    if (isValid) {
+      found = true;
+      break;
+    }
+  }
+  return found;
+}
+```
+
+Fun problem. Runs quick. There is likely a solution in the approach with the map and repeating sequences that might be faster, but I'd have to ruminate on it a minute longer...
