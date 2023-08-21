@@ -67,11 +67,7 @@ for (let i = 0; i < 10; i++) {
   const r = rotateArr(nums, Math.floor(Math.random() * nums.length));
   printArr(r);
 }
-// [4,5,6,7,8,9,1,2,3]
-// [8,9,1,2,3,4,5,6,7]
 // [1,2,3,4,5,6,7,8,9]
-// [4,5,6,7,8,9,1,2,3]
-// [5,6,7,8,9,1,2,3,4]
 // [4,5,6,7,8,9,1,2,3]
 // [9,1,2,3,4,5,6,7,8]
 // [8,9,1,2,3,4,5,6,7]
@@ -88,14 +84,11 @@ Lets also see what happens when we give it a more uniform repeating array
 const nums = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1];
 // ... Repeat Print Steps ...
 // [0,0,0,0,0,0,0,1,0,0,0]
-// [0,1,0,0,0,0,0,0,0,0,0]
 // [0,0,0,0,0,1,0,0,0,0,0]
 // [0,1,0,0,0,0,0,0,0,0,0]
 // [0,0,0,0,1,0,0,0,0,0,0]
 // [0,0,0,0,0,0,0,0,0,0,1]
 // [1,0,0,0,0,0,0,0,0,0,0]
-// [1,0,0,0,0,0,0,0,0,0,0]
-// [0,0,0,1,0,0,0,0,0,0,0]
 // [0,0,0,1,0,0,0,0,0,0,0]
 ```
 Things are getting trickier. Assuming all we know at the start of our search is what we can learn by poking around, it can be really hard to figure anything out about the above. We have too much noise
@@ -107,9 +100,11 @@ Consider the first array example above, also consider that we are going to only 
 ```
 With this as a snapshot, we don't really have a lot to work off of. It's possible that whatever target number we were looking for could exist in either of the blanks, given duplicates give us even less data to work with.
 
-If we had only unique values, we could use the ordering to quickly figure out where the original index was, then combine the arrays and do a search that way. But with duplicates, we have to reduce the noise.
+If we had only unique values, it would be pretty easy to figure out the original ordering or to combine the arrays and do a search that way. But with duplicates, we have to reduce the noise.
 
-We are going to need to remove values until we work with a small enough dataset. As it stands, we cannot possibly work with a dataset that has the exact same values for L, M, and R. We will need to pair it down. Let's start:
+We are going to need to remove values until we work with a small enough dataset. As it stands, we cannot possibly work with a dataset that has the exact same values for left, mid, and right pointers. We will need to pair it down. 
+
+Let's start:
 
 ```ts
 function search(arr: number[], target: number): boolean {
@@ -130,4 +125,107 @@ function search(arr: number[], target: number): boolean {
     }
     //........
   }
+}
+```
+This initial setup has a few things we need. 
+
+In our first few cycles, we want to remove duplicates from the left or right if they equal whats in mid. It will par down the range of the search. Additionally, if we happen across a value where arr[mid] = target, we can exit quickly.
+
+Lets see what this does after a few cycles to a trickier array:
+```ts
+// L     M     R
+//[0,0,0,0,3,0,0]
+//   L   M   R
+//  [0,0,0,3,0]
+//     L M R
+//    [0,0,3]
+
+```
+Unfortunately, this pushes us toward O(n), but I don't know if that is avoidable, particularly in arrays with repeating duplicates, especially where the target is nowhere to be found.
+
+That said, it helps in one other key way. Lets go back to our first set of arrays:
+
+```ts
+//  L       M       R
+// [4,5,6,7,8,9,1,2,3]
+// [8,9,1,2,3,4,5,6,7]
+// [1,2,3,4,5,6,7,8,9]
+// [9,1,2,3,4,5,6,7,8]
+// [3,4,5,6,7,8,9,1,2]
+```
+
+You'll notice I have divided them in left/right halves. At least 1 of those two halves is sorted. 
+
+This is a huge boon, because if our target falls within that sorted half, we can do a Binary Search. And, if our target doesn't fall within in, we can discard it in the search. 
+
+This is us getting closer to the classic O(log(n))
+
+Lets see an example using one of the sets from above:
+```ts
+// Target 7
+//  L       M       R
+// [4,5,6,7,8,9,1,2,3]
+// Left is sorted, 
+// -> our target falls within the sorted range
+// Move pointers to only check the left side
+//  L   M R 
+// [4,5,6,7]
+//
+//
+// Target 10
+//  L       M       R
+// [4,5,6,7,8,9,1,2,3]
+// Left is sorted
+// -> our target does not fall within the sorted range
+// Move pointers to only consider the right
+//  L   M R   
+// [9,1,2,3]
+```
+You can continue to do this, over and over again. Analyze a section that is sorted and see if our target is within it. If so, zoom in on it. Otherwise, disgard it and continue down the line.
+
+This results in the following implementation:
+```ts
+function search(arr: number[], target: number): boolean {
+  let left = 0;
+  let right = arr.length - 1;
+  let mid = 0;
+  while (left <= right) {
+    mid = Math.floor((left + right) / 2);
+    //Check for escape
+    if (arr[mid] === target) {
+      return true;
+    }
+    //Pull in left/right if we have duplicates, get distinct values for L, M, R
+    if (arr[left] === arr[mid] || arr[right] === arr[mid]) {
+      if (arr[left] === arr[mid]) left++;
+      if (arr[right] === arr[mid]) right--;
+      continue;
+    }
+    //The Left Half is Sorted
+    if (arr[left] <= arr[mid]) {
+      // And Our Target Is Within The Sorted Range
+      if (arr[left] <= target && target <= arr[mid]) {
+        right = mid - 1;
+        continue;
+      // Our Target Is Not Within the Sorted Range
+      } else {
+        left = mid + 1;
+        continue;
+      }
+    }
+    //The Right Half is Sorted
+    if (arr[mid] <= arr[right]) {
+      //And Our Target Is Within The Sorted Range
+      if (arr[mid] <= target && target <= arr[right]) {
+        left = mid + 1;
+        continue;
+      // Our Target Is Not Within the Sorted Range
+      } else {
+        right = mid - 1;
+        continue;
+      }
+    }
+  }
+  return false;
+}
 ```
