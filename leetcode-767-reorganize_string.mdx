@@ -1,0 +1,212 @@
+---
+title: "Leetcode 767: Reorganize String"
+date: '2023-08-23'
+tags: ['leetcode']
+---
+
+## The Problem
+Given a string s, rearrange the characters of s so that any two adjacent characters are not the same.
+
+Return any possible rearrangement of s or return "" if not possible.
+
+Example 1:
+- Input: s = "aab"
+- Output: "aba"
+
+Example 2:
+- Input: s = "aaab"
+- Output: ""
+
+Constraints:
+- 1 \<= s.length \<= 500
+- s consists of lowercase English letters.
+
+## The Solution
+I enjoyed this problem. Though I identified a quick solution to it, I struggled to implement it by moving a bit too fast and not considering all of the pieces. A reminder to slow down, reason out the problem, write it in psuedocode, then attempt.
+
+For the problem, lets consider the following:
+```ts
+const someString = 'aaaaaaaaaabbbbbbbcccccddd'
+```
+Much of this problem is concerned with the number of times any given character occurs, but the actual ordering of the string doesn't really matter. Because of this, we can chop the thing up and disregard it as soon as we extract what we really care about. Lets create a map that tracks the frequency of the occurance of each character, then lets convert that map into a sorted array of tuples representing each character and its associated number of counts:
+```ts
+function reorganizeString(s: string): string {
+  const strMap = new Map<string, number>();
+  s.split("").forEach((char) => {
+    let strCount = strMap.get(char);
+    if (strCount) {
+      strCount++;
+      strMap.set(char, strCount);
+    } else {
+      strMap.set(char, 1);
+    }
+  });
+
+  let charCounts: Array<[string, number]> = Array.from(strMap.keys())
+    .map((key) => {
+      return [key, strMap.get(key)] as [string, number];
+    })
+    .sort((a, b) => b[1] - a[1]);
+
+  console.log(charCounts);
+  /// [ [ 'a', 10 ], [ 'b', 7 ], [ 'c', 5 ], [ 'd', 3 ] ]
+}
+```
+
+Great. We know how many times each character has occured. With this, we can figure out if we have a string that is valid at all. Lets look at some invalid vs valid strings, to try to see what makes some valid and others invalid.
+```ts
+const validStrings = [
+  'aabbc', //ababc
+  'aaaabcd' //abacada
+  'aaaaaaabcdefg' //abacadaeafaga
+]
+const invalidStrings = [
+  'aa',
+  'aaab',
+  'aaaabc'
+]
+```
+With this we should start to see a pattern. An invalid string is any string which the highest occurring character occurs at least 2 more times than the combined amount of all other occuring characters. With this, we can exit out of the function early with a quick check:
+```ts
+//Get the combined occurance of characters for the n+1 -> m most occuring characters
+let lowerCharCount = charCounts.reduce((acc, curr, idx) => {
+    if (idx === 0) {
+      return acc;
+    }
+    acc += curr[1];
+    return acc;
+  }, 0) as number;
+//If the highest occurring character has more than 1 more occurance than their combined values, 
+//we can't possibly make this string work, so return early
+if (charCounts[0][1] - lowerCharCount > 1) {
+  return "";
+}
+```
+
+With this, we just need to start whittiling away at character counts. Lets go back to our old first example, and implment a method step by step that I think will tackle it.
+
+Every iteration, we will remove an instance of the highest occuring character. We will then add behind it an instance of the next highest occuring character, we will repeat this every iteration:
+```ts
+const someString = 'aaaaaaaaaabbbbbbbcccccddd'
+let returnStr = ''
+//[ [ 'a', 10 ], [ 'b', 7 ], [ 'c', 5 ], [ 'd', 3 ] ]
+// We want to start removing as many from 'a' as we can, as a is our pivot
+returnStr += 'a'
+//[ [ 'a', 9 ], [ 'b', 7 ], [ 'c', 5 ], [ 'd', 3 ] ]
+// We can't add 'a' again, becuase they can't repeat, so take from the next highest
+returnStr += 'b'
+//[ [ 'a', 9 ], [ 'b', 6 ], [ 'c', 5 ], [ 'd', 3 ] ]
+// Again, start removing 'a'
+returnStr += 'a';
+//[ [ 'a', 8 ], [ 'b', 6 ], [ 'c', 5 ], [ 'd', 3 ] ]
+returnStr += 'b';
+//[ [ 'a', 8 ], [ 'b', 5 ], [ 'c', 5 ], [ 'd', 3 ] ]
+returnStr += 'a';
+//[ [ 'a', 7 ], [ 'b', 5 ], [ 'c', 5 ], [ 'd', 3 ] ]
+//Here we need to simply pick one to remove, lets go with b because its the second highest in occurance
+returnStr += 'b';
+//[ [ 'a', 7 ], [ 'b', 4 ], [ 'c', 5 ], [ 'd', 3 ] ]
+//They are now out of order, we need some way to fix that, but we will just imagine we sort
+//[ [ 'a', 7 ], [ 'c', 5 ], [ 'b', 4 ], [ 'd', 3 ] ]
+returnStr += 'a';
+//[ [ 'a', 6 ], [ 'c', 5 ], [ 'b', 4 ], [ 'd', 3 ] ]
+returnStr += 'c';
+//[ [ 'a', 6 ], [ 'c', 4 ], [ 'b', 4 ], [ 'd', 3 ] ]
+returnStr += 'a';
+//[ [ 'a', 5 ], [ 'c', 4 ], [ 'b', 4 ], [ 'd', 3 ] ]
+returnStr += 'c';
+//[ [ 'a', 5 ], [ 'c', 3 ], [ 'b', 4 ], [ 'd', 3 ] ]
+//[ [ 'a', 5 ], [ 'b', 4 ], [ 'c', 3 ], [ 'd', 3 ] ]
+returnStr += 'a';
+//[ [ 'a', 4 ], [ 'b', 4 ], [ 'c', 3 ], [ 'd', 3 ] ]
+returnStr += 'b'
+//[ [ 'a', 4 ], [ 'b', 3 ], [ 'c', 3 ], [ 'd', 3 ] ]
+returnStr += 'a'
+//[ [ 'a', 3 ], [ 'b', 3 ], [ 'c', 3 ], [ 'd', 3 ] ]
+returnStr += 'b'
+//[ [ 'a', 3 ], [ 'b', 2 ], [ 'c', 3 ], [ 'd', 3 ] ]
+//[ [ 'a', 3 ], [ 'c', 3 ], [ 'd', 3 ], [ 'b', 2 ] ]
+// For the first time, we have multiple chars all at the same count all in the top position. We can safely remove one instance of each:
+returnStr += 'acd'
+//[ [ 'a', 2 ], [ 'c', 2 ], [ 'd', 2 ], [ 'b', 2 ] ]
+returnStr += 'acdb'
+//[ [ 'a', 1 ], [ 'c', 1 ], [ 'd', 1 ], [ 'b', 1 ] ]
+returnStr += 'acdb'
+//[ [ 'a', 0 ], [ 'c', 0 ], [ 'd', 0 ], [ 'b', 0 ] ]
+// returnStr = abababacacababacdacdbacdb
+//DONE!
+```
+
+Now, to just put this into code!
+
+```ts
+function reorganizeString(s: string): string {
+  const strMap = new Map<string, number>();
+  s.split("").forEach((char) => {
+    let strCount = strMap.get(char);
+    if (strCount) {
+      strCount++;
+      strMap.set(char, strCount);
+    } else {
+      strMap.set(char, 1);
+    }
+  });
+
+  let charCounts: Array<[string, number]> = Array.from(strMap.keys())
+    .map((key) => {
+      return [key, strMap.get(key)] as [string, number];
+    })
+    .sort((a, b) => b[1] - a[1]);
+
+  console.log(charCounts);
+
+  let lowerCharCount = charCounts.reduce((acc, curr, idx) => {
+    if (idx === 0) {
+      return acc;
+    }
+    acc += curr[1];
+    return acc;
+  }, 0) as number;
+
+  if (charCounts[0][1] - lowerCharCount > 1) {
+    return "";
+  }
+
+  let returnStrArr: string[] = [];
+  let totalChars = s.length;
+  while (totalChars > 0) {
+    //Remember how many times the biggest character was present this iteration
+    const benchmark = charCounts[0][1];
+    //Remove an instance of the top counted char, and reduce the number of total characters
+    returnStrArr.push(charCounts[0][0]);
+    charCounts[0][1] = charCounts[0][1] - 1;
+    totalChars--;
+    //If there are more characters than just the top char left
+    if (charCounts[1] && charCounts[1][1] > 0) {
+      //And the next highest is equal to the top chars benchmark
+      if (charCounts[1][1] === benchmark) {
+        //Try and add everything equal to the benchmark
+        for (
+          let i = 1;
+          i < charCounts.length && charCounts[i][1] === benchmark;
+          i++
+        ) {
+          returnStrArr.push(charCounts[i][0]);
+          charCounts[i][1] = charCounts[i][1] - 1;
+          totalChars--;
+        }
+      }
+      //Otherwise just add the next highest and reiterate
+      else {
+        returnStrArr.push(charCounts[1][0]);
+        charCounts[1][1] = charCounts[1][1] - 1;
+        totalChars--;
+      }
+      charCounts.sort((a, b) => b[1] - a[1]);
+    }
+  }
+  return returnStrArr.join("");
+}
+```
+
+Fun challenge.
