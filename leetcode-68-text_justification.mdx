@@ -1,0 +1,136 @@
+---
+title: "Leetcode 68: Text Justification"
+date: '2023-08-24'
+tags: ['leetcode']
+---
+
+## The Problem:
+
+Given an array of strings words and a width maxWidth, format the text such that each line has exactly maxWidth characters and is fully (left and right) justified.
+
+You should pack your words in a greedy approach; that is, pack as many words as you can in each line. Pad extra spaces ' ' when necessary so that each line has exactly maxWidth characters.
+
+Extra spaces between words should be distributed as evenly as possible. If the number of spaces on a line does not divide evenly between words, the empty slots on the left will be assigned more spaces than the slots on the right.
+
+For the last line of text, it should be left-justified, and no extra space is inserted between words.
+
+Note:
+
+A word is defined as a character sequence consisting of non-space characters only.
+Each word's length is guaranteed to be greater than 0 and not exceed maxWidth.
+The input array words contains at least one word.
+ 
+
+#### Example 1:
+- Input: words = ["This", "is", "an", "example", "of", "text", "justification."], maxWidth = 16
+- Output:
+```ts
+[
+   "This    is    an",
+   "example  of text",
+   "justification.  "
+]
+```
+#### Example 2:
+- Input: words = ["What","must","be","acknowledgment","shall","be"], maxWidth = 16
+- Output:
+```ts [
+  "What   must   be",
+  "acknowledgment  ",
+  "shall be        "
+]
+``` 
+Explanation: Note that the last line is "shall be    " instead of "shall     be", because the last line must be left-justified instead of fully-justified.
+Note that the second line is also left-justified because it contains only one word.
+#### Example 3:
+- Input: words = ["Science","is","what","we","understand","well","enough","to","explain","to","a","computer.","Art","is","everything","else","we","do"], maxWidth = 20
+- Output:
+```ts 
+[
+  "Science  is  what we",
+  "understand      well",
+  "enough to explain to",
+  "a  computer.  Art is",
+  "everything  else  we",
+  "do                  "
+]
+```
+#### Constraints:
+- 1 \<= words.length \<= 300
+- 1 \<= words[i].length \<= 20
+- words[i] consists of only English letters and symbols.
+- 1 \<= maxWidth \<= 100
+- words[i].length \<= maxWidth
+
+## The Solution
+
+Not sure I took an exactly elegant solution, but I decided to tackle this using a bit of OOP and my solution ranked near the top of TS for speed and memory, so here goes.
+
+First, we want the idea of a 'line' of text, which is simply an object that holds words and knows what its charCount limits might be. It has some utility functions for telling us if its full up on characters, but otherwise its a repository. It lets us know if we can add more words to it, and it lets us add those words. Lastly, it has a method for putting out text in a justified or left-justified manner. A rough sketch out is as follows:
+```ts
+class Line {
+  private _words: Array<string>;
+  private _charsUsed: number;
+  private _wordCharsUsed: number;
+  private _maxWidth: number;
+  constructor(maxWidth: number) {
+    this._words = [];
+    this._charsUsed = 0;
+    this._maxWidth = maxWidth;
+    this._wordCharsUsed = 0;
+  }
+  addWord(word: string): void {
+    this._charsUsed = this._charsUsed + word.length + 1;
+    this._wordCharsUsed = this._wordCharsUsed + word.length;
+    this._words.push(word);
+  }
+  canAddWord(word: string): boolean {
+    return this._charsUsed + word.length <= this._maxWidth;
+  }
+  consolidate(isLeftJustified: boolean): string {
+    if (isLeftJustified) {
+      let line = this._words.join(" ");
+      if (line.length < this._maxWidth) {
+        while (this._maxWidth - line.length > 0) {
+          line += " ";
+        }
+      }
+      return line;
+    }
+    let remainingChars = this._maxWidth - this._wordCharsUsed;
+    let i = 0;
+    while (remainingChars > 0) {
+      if (i >= this._words.length - 1) {
+        i = 0;
+      }
+      this._words[i] = `${this._words[i]} `;
+      remainingChars--;
+      i++;
+    }
+    return this._words.join("");
+  }
+}
+```
+
+Then, we simply split the words provided to us into lines and tell each line whether or not it is justified or not. Easy peasy.
+```ts
+function fullJustify(words: string[], maxWidth: number): string[] {
+  const lines: Line[] = [];
+  let [w, i] = [0, 0]; // w = words processed, i = line number
+  while (w < words.length) {
+    if (lines[i] == undefined) {
+      lines[i] = new Line(maxWidth);
+      lines[i].addWord(words[w]); //One of the contraints was that words will never be longer than the maxWidth, so we know we dont need to check for this on the first word we enter.
+      w++;
+      continue;
+    }
+    if (lines[i].canAddWord(words[w])) {
+      lines[i].addWord(words[w]);
+      w++;
+      continue;
+    }
+    i++;
+  }
+  return lines.map((line, idx) => line.consolidate(idx === lines.length - 1)); //Consolidate Left Justified if we are on the last line
+}
+```
