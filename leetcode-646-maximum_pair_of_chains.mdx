@@ -1,0 +1,109 @@
+---
+title: "Leetcode 646: Maximum Pair of Chains"
+date: '2023-08-26'
+tags: ['leetcode']
+---
+
+## The Problem:
+You are given an array of n pairs pairs where pairs[i] = [lefti, righti] and lefti < righti.
+
+A pair p2 = [c, d] follows a pair p1 = [a, b] if b < c. A chain of pairs can be formed in this fashion.
+
+Return the length longest chain which can be formed.
+
+You do not need to use up all the given intervals. You can select pairs in any order.
+
+#### Example 1:
+- Input: pairs = [[1,2],[2,3],[3,4]]
+- Output: 2
+- Explanation: The longest chain is [1,2] -> [3,4].
+#### Example 2:
+- Input: pairs = [[1,2],[7,8],[4,5]]
+- Output: 3
+- Explanation: The longest chain is [1,2] -> [4,5] -> [7,8].
+#### Constraints:
+- n == pairs.length
+- 1 \<= n \<= 1000
+- -1000 \<= lefti \< righti \<= 1000
+
+## The Solution
+
+I was certain I had the fastest solution for this, but missed something incredibly easy. My first approach was to tackle this with a tree and create nodes for each of the pairs and show all the possible routes they could explore by doing iterative passes. This turned out to be, predictably, very slow. I then realized that if you sorted each pair based of its starting value, and then iterated out from that pair point, you could determine which pairs had the most possible partners, and the longest chain would necessarily consist of pair points with increasingly smaller numbers of potential partners. I tackled the problem like so:
+
+```ts
+class Pair {
+  private _data: [number, number];
+  private _numFollowing: number;
+  public constructor(pair: Array<number>) {
+    this._data = [pair[0], pair[1]];
+    this._numFollowing = 0;
+  }
+  public getData(): [number, number] {
+    return this._data;
+  }
+  public incrementNumFollowing(): void {
+    this._numFollowing++;
+  }
+  public doesFollow(pair: Pair): boolean {
+    return this._data[1] < pair.getData()[0];
+  }
+  public getNumFollowing(): number {
+    return this._numFollowing;
+  }
+}
+function findLongestChain(pairs: number[][]): number {
+  if (pairs.length === 0) return 0;
+  if (pairs.length === 1) return 1;
+  pairs.sort((a, b) => a[0] - b[0]);
+  const p = pairs.map((pair) => new Pair(pair));
+  for (let i = 0; i < p.length - 1; i++) {
+    for (let j = i + 1; j < p.length; j++) {
+      if (p[i].doesFollow(p[j])) {
+        p[i].incrementNumFollowing();
+      }
+    }
+  }
+  p.sort((a, b) => b.getNumFollowing() - a.getNumFollowing());
+  const chain: Array<Pair> = [p[0]];
+  for (let i = 1; i < p.length; i++) {
+    if (chain[chain.length - 1].doesFollow(p[i])) {
+      chain.push(p[i]);
+    }
+  }
+  console.log("debg");
+  return chain.length;
+}
+
+const testArray = Array.from({ length: 100 }, () => {
+  const val1 = Math.floor(Math.random() * 100);
+  const val2 = Math.floor(Math.random() * 100);
+  return val1 <= val2 ? [val1, val2 + 1] : [val2, val1 + 1];
+});
+
+findLongestChain(testArray);
+```
+
+While this works, it had poor performance compared to other solutions:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/leetcode-646-maximum_pair_of_chains_performance.jpg" alt="leetcode-646-maximum_pair_of_chains_performance" />
+
+In running through the solutions, I was nearly there, but sorting on the last value and working your way down skips the whole having to compare every value against every other value aspect of my solution, and we get a much more performance chain builder:
+
+```js
+var findLongestChain = function(pairs) {
+    pairs.sort((a, b) => a[1] - b[1]);
+    
+    let cur = Number.MIN_SAFE_INTEGER, ans = 0;
+    
+    for (const [start, end] of pairs) {
+        if (cur < start) {
+            cur = end;
+            ans++;
+        }
+    }
+    
+    return ans;
+};
+```
+
+Oh well, lessons learned.
