@@ -1,0 +1,177 @@
+---
+title: "Leetcode 403: Frog Jump"
+date: '2023-08-27'
+tags: ['leetcode']
+---
+
+## The Problem:
+Implement a last-in-first-out (LIFO) stack using only two queues. The implemented stack should support all the functions of a normal stack (push, top, pop, and empty).
+
+#### Implement the MyStack class:
+- void push(int x) Pushes element x to the top of the stack.
+- int pop() Removes the element on the top of the stack and returns it.
+- int top() Returns the element on the top of the stack.
+- boolean empty() Returns true if the stack is empty, false otherwise.
+
+#### Notes:
+- You must use only standard operations of a queue, which means that only push to back, peek/pop from front, size and is empty operations are valid.
+- Depending on your language, the queue may not be supported natively. You may simulate a queue using a list or deque (double-ended queue) as long as you use only a queue's standard operations.
+
+#### Constraints:
+- 1 \<= x \<= 9
+- At most 100 calls will be made to push, pop, top, and empty.
+- All the calls to pop and top are valid.
+
+## The Solution:
+
+First, I needed something that could only operate as a queue in javascript, so I decided to implement a Linked List based Queue::
+
+```ts
+class SingleLinkedListNode<T> {
+  private _data: T;
+  private _next: SingleLinkedListNode<T> | null;
+  public constructor(data: T) {
+    this._data = data;
+    this._next = null;
+  }
+  public setNext(next?: SingleLinkedListNode<T>): void {
+    if (next) {
+      this._next = next;
+      return;
+    }
+    this._next = null;
+  }
+  public getNext(): SingleLinkedListNode<T> | null {
+    return this._next;
+  }
+  public getData(): T {
+    return this._data;
+  }
+}
+
+class Queue<T> {
+  private _root: SingleLinkedListNode<T> | null;
+  private _last: SingleLinkedListNode<T> | null;
+  private _count: number;
+  public constructor(data?: Array<T>) {
+    if (data) {
+      data.forEach((datum, idx) => {
+        if (idx === 0) {
+          const newNode = new SingleLinkedListNode<T>(datum);
+          this._root = newNode;
+          this._last = newNode;
+        } else {
+          const newNode = new SingleLinkedListNode<T>(datum);
+          this._last.setNext(newNode);
+          this._last = newNode;
+        }
+        this._count = data.length;
+      });
+      return;
+    }
+    this._root = null;
+    this._last = null;
+    this._count = 0;
+  }
+  public enqueue(data: T): void {
+    const newNode = new SingleLinkedListNode(data);
+    this._count++;
+    if (this._last) {
+      this._last.setNext(newNode);
+      this._last = newNode;
+    } else {
+      this._root = newNode;
+      this._last = newNode;
+    }
+  }
+  public dequeue(): T | null {
+    if (this._root == null) {
+      return null;
+    }
+    const data = this._root.getData();
+    const nextNode = this._root.getNext();
+    this._root = nextNode;
+    this._count--;
+    if (this._count === 0) {
+      this._last = null;
+    }
+    return data;
+  }
+  public peek(): T | null {
+    if (this._root) {
+      return this._root.getData();
+    }
+    return null;
+  }
+  public isEmpty(): boolean {
+    return this._count === 0;
+  }
+  public getCount(): number {
+    return this._count;
+  }
+  public forEach(func: (data: T) => void): void {
+    let current = this._root;
+    while (current) {
+      func(current.getData());
+      current = current.getNext();
+    }
+  }
+}
+```
+
+Now the magic of the whole thing. If we have two queues, we can simply dump the contents from one into the other whenever we are looking to get the 'last' entry. It's slow, but thats what the problem wanted. Below is a drawing example:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/twoQueuesStack.png" alt="twoQueuesStack" />
+
+For the implementation:
+```ts
+class MyStack {
+  private _q1: Queue<number>;
+  private _q2: Queue<number>;
+  public constructor() {
+    this._q1 = new Queue<number>();
+    this._q2 = new Queue<number>();
+  }
+  public push(x: number): void {
+    const toEnqueue = this._q1.isEmpty() ? this._q2 : this._q1;
+    toEnqueue.enqueue(x);
+    return;
+  }
+  public pop(): number | null {
+    const toDequeue = this._q1.isEmpty() ? this._q2 : this._q1;
+    const toEnqueue = this._q1.isEmpty() ? this._q1 : this._q2;
+    let toReturn: number | null = null;
+    let cycling = toDequeue.getCount() > 0;
+    while (cycling) {
+      const data = toDequeue.dequeue();
+      if (toDequeue.getCount() === 0) {
+        cycling = false;
+        toReturn = data;
+      } else {
+        toEnqueue.enqueue(data);
+      }
+    }
+    return toReturn;
+  }
+  public top(): number | null {
+    const toDequeue = this._q1.isEmpty() ? this._q2 : this._q1;
+    const toEnqueue = this._q1.isEmpty() ? this._q1 : this._q2;
+    let toReturn: number | null = null;
+    let cycling = toDequeue.getCount() > 0;
+    while (cycling) {
+      const data = toDequeue.dequeue();
+      if (toDequeue.getCount() === 0) {
+        cycling = false;
+        toReturn = data;
+      }
+      toEnqueue.enqueue(data);
+    }
+    return toReturn;
+  }
+  public empty(): boolean {
+    return this._q1.isEmpty() && this._q2.isEmpty();
+  }
+}
+```
+
+Works like a charm.
