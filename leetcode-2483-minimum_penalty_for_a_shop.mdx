@@ -1,0 +1,94 @@
+---
+title: "Leetcode 2483: Minimum Penalty For A Shop"
+date: '2023-08-29'
+tags: ['leetcode']
+---
+
+## The Problem
+You are given the customer visit log of a shop represented by a 0-indexed string customers consisting only of characters 'N' and 'Y':
+- if the ith character is 'Y', it means that customers come at the ith hour
+- whereas 'N' indicates that no customers come at the ith hour.
+If the shop closes at the jth hour (0 \<= j \<= n), the penalty is calculated as follows:
+- For every hour when the shop is open and no customers come, the penalty increases by 1.
+- For every hour when the shop is closed and customers come, the penalty increases by 1.
+Return the earliest hour at which the shop must be closed to incur a minimum penalty.
+
+Note that if a shop closes at the jth hour, it means the shop is closed at the hour j.
+
+#### Example 1:
+- Input: customers = "YYNY"
+- Output: 2
+Explanation: 
+- Closing the shop at the 0th hour incurs in 1+1+0+1 = 3 penalty.
+- Closing the shop at the 1st hour incurs in 0+1+0+1 = 2 penalty.
+- Closing the shop at the 2nd hour incurs in 0+0+0+1 = 1 penalty.
+- Closing the shop at the 3rd hour incurs in 0+0+1+1 = 2 penalty.
+- Closing the shop at the 4th hour incurs in 0+0+1+0 = 1 penalty.
+Closing the shop at 2nd or 4th hour gives a minimum penalty. Since 2 is earlier, the optimal closing time is 2.
+#### Example 2:
+- Input: customers = "NNNNN"
+- Output: 0
+Explanation: It is best to close the shop at the 0th hour as no customers arrive.
+#### Example 3:
+- Input: customers = "YYYY"
+- Output: 4
+Explanation: It is best to close the shop at the 4th hour as customers arrive at each hour.
+ 
+
+#### Constraints:
+- 1 \<= customers.length \<= 105
+- customers consists only of characters 'Y' and 'N'.
+
+## The Solution:
+
+Looking at this at first made me really want to make n^2 passes to build a matrix of values, then add them up. My brain lit up in seeing a matrix when reading through Example 1's explanation. It looks so clear:
+```ts
+[
+  [1,1,0,1],
+  [0,1,0,1],
+  [0,0,0,1],
+  [0,0,1,1],
+  [0,0,1,0]
+]
+```
+
+However, this is a trap. Thinking of it a bit longer, we only really need to track what the optimum time to close would be. That moment is the moment where you have more Y's on the left side of a pointer than you do N's. To track this, we can break it all down into a simple score, and see when it is highest. If we are 'open' when we have customers, we get a +1 to score. If we are closed, we get a -1. The opposite would necessarily be true, so we can deduce we just want to maximize score.
+
+If this doesn't make sense, lets look at some examples with comments for the optimum time to close:
+```ts
+const someSchedules = [
+  'YYYYY', //Open The Entire Time!
+  'NNNNN', //Closed The Entire Time!
+  'NNYYY', //Open The Entire Time
+  'YYYNN', //Open Until The 4th Hour
+  'YNYNY', //Open The Entire Time
+  'NYNYN', //Closed The Entire Time
+]
+```
+
+Looking at the above again, the earliest hour where we have the most Y's to the left of that hour's pointer than N's is the hour we want to be open. With that, we can write the folowing, which gets the job done in O(n):
+
+```ts
+function bestClosingTime(customers: string): number {
+  let highest = 0;
+  let score = 0;
+  let turnAtHighest = 0;
+  for (let i = 0; i < customers.length; i++) {
+    if (customers.substring(i, i + 1) === "Y") {
+      score++;
+      if (score > highest) {
+        highest = score;
+        turnAtHighest = i + 1;
+      }
+    } else {
+      score--;
+    }
+  }
+  return turnAtHighest;
+}
+```
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/minimumPenaltyForAShopPerformance.png" alt="minimumPenaltyForAShopPerformance" />
+
+Fun problem, and fast!
+
