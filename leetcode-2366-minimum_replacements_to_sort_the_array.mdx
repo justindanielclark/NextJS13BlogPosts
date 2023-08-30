@@ -1,0 +1,101 @@
+---
+title: "Leetcode 767: Minimum Replacements to Sort the Array"
+date: '2023-08-30'
+tags: ['leetcode']
+---
+
+## The Problem
+You are given a 0-indexed integer array nums. In one operation you can replace any element of the array with any two elements that sum to it.
+
+For example, consider nums = [5,6,7]. In one operation, we can replace nums[1] with 2 and 4 and convert nums to [5,2,4,7].
+
+Return the minimum number of operations to make an array that is sorted in non-decreasing order.
+
+#### Example 1:
+- Input: nums = [3,9,3]
+- Output: 2
+
+Explanation: Here are the steps to sort the array in non-decreasing order:
+- From [3,9,3], replace the 9 with 3 and 6 so the array becomes [3,3,6,3]
+- From [3,3,6,3], replace the 6 with 3 and 3 so the array becomes [3,3,3,3,3]
+
+There are 2 steps to sort the array in non-decreasing order. Therefore, we return 2.
+
+#### Example 2:
+- Input: nums = [1,2,3,4,5]
+- Output: 0
+
+Explanation: The array is already in non-decreasing order. Therefore, we return 0. 
+ 
+#### Constraints:
+1 \<= nums.length \<= 105
+1 \<= nums[i] \<= 109
+
+
+## The Solution
+
+This is one I thought was going to be significantly harder than it was. I struggled on this one a lot and blew more paper than I should have taking apart pieces of the puzzle until it started to come into view. I took a lot of approaches that went no where, including a whole thing about converting numbers to thier log base 2 equivalent.
+
+I should have spent a lot more time thinking about knowns and unknowns from starting cases, but in hindsight, it is always WAY easier to say that after you have found the solution after banging your head against the wall for multiple hours.
+
+#### Let's go over what we can know:
+- The first very obvious win from someone looking at the data set is that the absolute highest we can have a number be is the right most bound in the array. This means we are HIGHLY incentivized to start from right and head left.
+- The next piece we need to extract is that minimum splits of a number involve setting up its neighbor to it's left to have the easiest time to split itself. IE: We want to maximize the remainder after splitting apart a number.
+- We don't need to split a number 'all at once', but can do each piece of it in one operation. See below:
+
+If we have:
+```ts
+[3,13,3]
+```
+we want to think about pulling off numbers from 13 at the maximum (greedy) speed until we need to make a choice, like so:
+```ts
+[3, 10, 3, 3] // Reduce by 3 and move it to the right
+[3, 7, 3, 3, 3] // again
+[3, 4, 3, 3, 3, 3] // again
+```
+Here, we are at an interesting point. We want to maximize the number, so we need to adapt a different 'reduction' amount, but we still need to split 4 so it is less than its numbers to the right. Splitting it in 2 does the trick:
+```ts
+[3, 4, 3, 3, 3, 3]
+[3, 2, 2, 3, 3, 3, 3]
+```
+
+For this work, we had 4 operations, a remainder of 2, started with the numbers [13, 3] with 3 being a bound we checked against 10. Playing with some numbers yields us:
+```ts
+let num = 13;
+let bound = 3;
+let numTimes = Math.ceil(num/bound) // 5
+let numOperations = numTimes - 1; // 4
+let remainder = Math.floor(num / numTimes) // 2
+```
+
+This works with all variations of numbers:
+```ts
+let num = 100;
+let bound = 3;
+let numTimes = Math.ceil(num/bound) // 34
+let numOperations = numTimes - 1; // 33
+let remainder = Math.floor(num / numTimes) // 2
+```
+
+Now to just add it all up. We dont actually need to modify the array in any way whatsoever, just track what the bounding is and update it as we go along from right to left, all the while tracking the number of operations we would need to make:
+
+```ts
+function minimumReplacement(nums: number[]): number {
+  if (nums.length === 0 || nums.length == 1) return 0;
+  let numOperations = 0;
+  let bounding = nums[nums.length - 1];
+  for (let i = nums.length - 2; i >= 0; i--) {
+    let num = nums[i];
+    if (num > bounding) {
+      let num_times = Math.ceil(num / bounding);
+      numOperations += num_times - 1;
+      bounding = Math.floor(num / num_times);
+    } else {
+      bounding = num;
+    }
+  }
+  return numOperations;
+}
+```
+
+One of the harder problems I've done so far on here, but mostly because the key takeaways were just so hard to spot for me for some reason. I think this is one of those things that the more of them you do, the easier they get to see.
