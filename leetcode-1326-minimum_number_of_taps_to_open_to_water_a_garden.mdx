@@ -40,7 +40,11 @@ Return the minimum number of taps that should be open to water the whole garden,
 ## The Solution:
 
 ### My first approach
-This was something I had to actually at least get a working copy out of before I knew it was incorrect, was to track which points required which taps to be open in order to be covered. I figured that if I knew which idx's in the garden had only 1 possible tap that worked for them, these taps were by default part of the minimum requirements. This resulted in the below cursory implementation:
+This was something I had to actually at least get a working copy out of before I knew it was incorrect.
+
+The approach was to track which points required which taps to be open in order to be covered. I figured that if I knew which idx's in the garden had only 1 possible tap that worked for them, these taps were by default part of the minimum requirements. If any had 0 possible, then we could exit early because nothing could water certain points.
+
+This resulted in the below cursory implementation:
 
 ```ts
 function minTaps(n: number, ranges: number[]): number {
@@ -92,66 +96,7 @@ This algorithm would likely want to accomplish a few things:
 
 This resulted in the following implementation:
 
-```ts
-function minTaps(n: number, ranges: number[]): number {
-  let numOps = 0;
-  let searchRange = 0;
-  let error = false;
-  let searching = true;
-  let centerPointer = 0;
-  ranges.forEach((num) => {
-    if (searchRange < num) searchRange = num;
-  });
-  while (!error && searching) {
-    let [l, c, r] = calculateLeftCenterRight(centerPointer, searchRange, n);
-    let highestValue = 0; //lowest possible
-    let highestIndex = -1; //error if never changed
-    let highestIndexPower = -1;
-    Array.from({ length: r - l + 1 }).forEach((item, idx) => {
-      const value = calculateValue(ranges[idx + l], idx + l, c, n);
-      if (value > highestValue) {
-        highestValue = value;
-        highestIndex = idx + l;
-        highestIndexPower = ranges[idx + l];
-      }
-    });
-    if (highestIndex === -1) {
-      error = true;
-    } else {
-      numOps++;
-      centerPointer = highestIndex + highestIndexPower;
-      if (centerPointer >= n) {
-        searching = false;
-      }
-    }
-  }
-  if (error) return -1;
-  return numOps;
-  function calculateLeftCenterRight(
-    newPosition: number,
-    searchRange: number,
-    upperLimit: number
-  ): [number, number, number] {
-    return [
-      newPosition - searchRange < 0 ? 0 : newPosition - searchRange,
-      newPosition,
-      newPosition + searchRange > upperLimit ? upperLimit : newPosition + searchRange,
-    ];
-  }
-  function calculateValue(power: number, idx: number, c: number, upperLimit: number): number {
-    //It's power cannot reach our node, so it is useless this iteration
-    if (power === 0) return 0;
-    if (c < idx && c < idx - power) return 0;
-    if (idx < c && c > idx + power) return 0;
-    //Power Reaches Our Node
-    let upper = idx + power;
-    if (upper > upperLimit) upper = upperLimit;
-    return upper - c;
-  }
-}
-```
-
-At the start, we just declare some tracking variables. We additionally use one O(n) pass on the array to figure out what the strongest possible hose is, as we want to look for it on each iteration if we can:
+First, we just declare some tracking variables. We additionally use one O(n) pass on the array to figure out what the strongest possible hose is, as we want to look for it on each iteration if we can:
 ```ts
 let numOps = 0;
 let searchRange = 0;
@@ -189,9 +134,11 @@ function calculateValue(power: number, idx: number, c: number, upperLimit: numbe
 }
 ```
 
-calculateLeftCenterRight() gives me 3 sets of pointers I can work with when sliding up the array. The l variable tracks how far left I can look, c is where I am currently looking, and r is the rightmost. The distance between l -> c and c -> r is purely a reflection of the possible search range based on what the highest possible power of a hose is.
+#### calculateLeftCenterRight() 
+gives me 3 sets of pointers I can work with when sliding up the array. The l variable tracks how far left I can look, c is where I am currently looking, and r is the rightmost. The distance between l -> c and c -> r is purely a reflection of the possible search range based on what the highest possible power of a hose is.
 
-calculateValue() gives a value score for any given hose index. A hose that waters more spaces is worth more. Some hoses with a high power water spaces that have already been watered, so they are less valuable. Others have low power, but water the spaces we need them to most when advancing. The score reflects that. If a hose cannot water our central space, we have a problem, and that hose is worth nothing.
+#### calculateValue() 
+gives a value score for any given hose index. A hose that waters more spaces is worth more. Some hoses with a high power water spaces that have already been watered, so they are less valuable. Others have low power, but water the spaces we need them to most when advancing. The score reflects that. If a hose cannot water our central space, we have a problem, and that hose is worth nothing.
 
 Now, we just combine all of it with an iterative solution to track where our pointers are, and advance them by the best power gain in a range:
 
