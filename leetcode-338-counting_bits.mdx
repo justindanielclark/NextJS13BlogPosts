@@ -1,0 +1,188 @@
+---
+title: "Leetcode 338: Counting Bits"
+date: '2023-09-01'
+tags: ['leetcode']
+---
+
+## The Problem
+
+Given an integer n, return an array ans of length n + 1 such that for each i (0 <= i <= n), ans[i] is the number of 1's in the binary representation of i.
+
+#### Example 1:
+- Input: n = 2
+- Output: [0,1,1]
+#### Explanation:
+- 0 --> 0
+- 1 --> 1
+- 2 --> 10
+
+#### Example 2:
+- Input: n = 5
+- Output: [0,1,1,2,1,2]
+#### Explanation:
+- 0 --> 0
+- 1 --> 1
+- 2 --> 10
+- 3 --> 11
+- 4 --> 100
+- 5 --> 101
+ 
+#### Constraints:
+0 \<= n \<= 105
+ 
+
+#### Follow up:
+
+It is very easy to come up with a solution with a runtime of O(n log n). Can you do it in linear time O(n) and possibly in a single pass?
+Can you do it without using any built-in function (i.e., like __builtin_popcount in C++)?
+
+## The Solution
+
+I am not very familiar with bit tricks, though I do understand counting in binary. A quick google revealed that JS has a built in way of turning numbers into their 2 bit representations in (number).toString(2). So I quickly set off a solution that looks like the following:
+
+```ts
+function countBits(n: number): number[] {
+  const returnable: number[] = [];
+  for (let i = 0; i <= n; i++) {
+    let count = 0;
+    const str = i.toString(2);
+    for (let j = 0; j < str.length; j++) {
+      if (str.substring(j, j + 1) === "1") count++;
+    }
+    returnable.push(count);
+  }
+  return returnable;
+}
+```
+This did the job, but under performed. It turns out predeclaring the array instead of pushing into it and having it expand to match performs better, but only slightly.
+
+```ts
+function countBits(n: number): number[] {
+  const returnable: number[] = Array(n + 1);
+  for (let i = 0; i <= n; i++) {
+    let count = 0;
+    const str = i.toString(2);
+    for (let j = 0; j < str.length; j++) {
+      if (str.substring(j, j + 1) === "1") count++;
+    }
+    returnable[i] = count;
+  }
+  return returnable;
+}
+```
+
+Looking through solutions from others, most are using built in binary conversion tools doing the exact same thing I did just slightly different in whatever the language allows for. 
+
+
+One submission, more than any other, stood out to me though. This is mostly because it was doing something I had little familiarity with and wanted to know as much as I could about: bit manipulation.
+```ts
+function countBits(n: number): number[] {
+  const res = Array( n + 1 ); res[ 0 ] = 0;
+  let l = 0, r = 1;
+  while ( r + l < n + 1 ) {
+      res[ r + l ] = 1 + res[ l++ ];
+      if ( l === r ) { l = 0; r <<= 1; }
+  }
+  return res;
+};
+```
+I have no idea what '\<\<=' is doing there. Time to break out the MDN docs and play around a bit:
+
+```ts
+let a = 5;
+let b = 0;
+console.log((a <<= b)) // 5
+
+let a = 5;
+let b = 1;
+console.log((a <<= b)) // 10
+
+let a = 5;
+let b = 2;
+console.log((a <<= b)) // 20
+
+let a = 5;
+let b = 3;
+console.log((a <<= b)) // 40
+
+let a = 14;
+let b = 1;
+console.log((a <<= b)) // 28
+```
+
+Cool. Doubling on each bit shift. If you pull out the binary, you can see it happening:
+
+```ts
+let a = 5;  
+// 00000000000000000000000000000101
+a <<= 2;   
+// 00000000000000000000000000010100
+```
+
+Shifting to the right appears to do the same thing but in reverse. You divide by 2. Because these types of bits do not store information about decimals, it floors whatever the result might be as well. Also cool.
+
+I see what they are doing now. Lets look at a list of numbers an their equivalent in binary:
+```ts
+0  // 00000
+1  // 00001 <---
+2  // 00010 <---
+3  // 00011
+4  // 00100 <---
+5  // 00101
+6  // 00110
+7  // 00111
+8  // 01000 <---
+9  // 01001
+10 // 01010
+11 // 01011
+12 // 01100
+13 // 01101
+14 // 01110
+15 // 01111
+16 // 10000 <---
+```
+
+For any given number, n, the least 1's they will have in count is precisely when their count goes up a shift. IE: 1 -> 2 -> 4 -> 8 -> 16. Each time these shifts happen, the number of 1's in the count resets back to 1. 
+
+Consider:
+```ts
+19 // 10011
+20 // 10100
+
+
+// 19 is:
+16 // 10000
+// +
+3  // 10011
+   // 10011
+
+// 20 is:
+16 // 10000
+// +
+4  // 10100
+   // 10100
+
+```
+
+In this case, the (3) of (19) moving to (4) to make (20) wiped an equal amount of 1's in the count the same as when (3) moves from (4), just by the very nature of how the counting proceeds.
+
+Lets look back at the optimal code again and see if we can't learn somethings:
+```ts
+function countBits(n: number): number[] {
+  const res = Array( n + 1 ); res[ 0 ] = 0;
+  let l = 0, r = 1;
+  while ( r + l < n + 1 ) { 
+      res[ r + l ] = 1 + res[ l++ ];
+      if ( l === r ) { l = 0; r <<= 1; }
+  }
+  return res;
+};
+```
+- res is an initialized array whos memory allocation is predetermined who's 0th index is set to match bit counts at 0.
+- l is initialized at 0. In the loop, it chases r until it hits it, at which point r doubles and l is reset back to 0. 
+- r+l increments by 1 naturally this way as r is only doubled when l has hit it in the chase. This gives us a natural counter to chase n.
+- r doubles in a way that aligns with bit resets. 1 -> 2 -> 4 -> 8 -> 16. When it does, l is reset to 0 and we ought be counting 1 for the number of total bits.
+- l is set to grab its last value from the last time it whatever it was, repeatedly. This makes sense, we are reusing values we already determined but this time r has increased, which leads us to:
+- the 1 here in (1 + res[l++]) represents the latest gain in r increasing since the last time l visited this number. 
+
+This is a really clever solution. My mind doesn't think this way just quite yet at first glance, but I can see it now. Really clever things. Going to keep my eyes peeled for number needs to keep doubling or number needs to keep halving oppurtunities in the future.
