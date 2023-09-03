@@ -1,0 +1,96 @@
+---
+title: "Leetcode 62: Unique Paths"
+date: '2023-09-02'
+tags: ['leetcode']
+---
+
+## The Problem:
+
+There is a robot on an m x n grid. The robot is initially located at the top-left corner (i.e., grid[0][0]). The robot tries to move to the bottom-right corner (i.e., grid[m - 1][n - 1]). The robot can only move either down or right at any point in time.
+
+Given the two integers m and n, return the number of possible unique paths that the robot can take to reach the bottom-right corner.
+
+The test cases are generated so that the answer will be less than or equal to 2 * 109.
+
+#### Example 1:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/robot_maze.png" alt="mazeimg" />
+- Input: m = 3, n = 7
+- Output: 28
+#### Example 2:
+Input: m = 3, n = 2
+Output: 3
+#### Explanation: From the top-left corner, there are a total of 3 ways to reach the bottom-right corner:
+1. Right -> Down -> Down
+2. Down -> Down -> Right
+3. Down -> Right -> Down
+ 
+#### Constraints:
+1 \<= m, n \<= 100
+
+## The Solution:
+Found a quick solution when I started to draft out how many paths there were to any given point on a 5x5
+```ts
+[
+  01, 01, 01, 01, 01, 01,
+  01, 02, 03, 04, 05, 06,
+  01, 03, 06, 10, 15, 21,
+  01, 04, 10, 20, 35, 56,
+  01, 05, 15, 35, 70, 126,
+  01, 06, 21, 56, 126, 256
+]
+```
+
+You'll notice that there's a pattern that emerges where the number of paths for any given space is the number of paths to arrive at the tile above and to the left. We only need to compute half of the total number of N x M total squares given the tiles repeat themselves. If n is less than m, we need to also only compute n diagonal squares, then move (m-n) to the right as well.
+
+I found two solutions to do so. One involves two arrays:
+
+```ts
+function uniquePaths(m: number, n: number): number {
+  let [h, l] = m >= n ? [m, n] : [n, m];
+  if (h === 0 || l === 0) return 0;
+  if (l === 1) return 1;
+  let topArr = Array(h).fill(1);
+  let botArr = Array(h).fill(1);
+  let swap;
+  for (let i = 0; i < l; i++) {
+    for (let j = i + 1; j < h; j++) {
+      if (j === i + 1) {
+        botArr[j] = topArr[i + 1] * 2;
+        continue;
+      } else {
+        botArr[j] = topArr[j] + botArr[j - 1];
+      }
+    }
+    swap = botArr;
+    botArr = topArr;
+    topArr = swap;
+  }
+  return botArr[h - 1];
+}
+```
+
+Upon reflecting a bit more, I realized I could reduce it to one array with the following implementation.
+
+```ts
+function uniquePaths(m: number, n: number): number {
+  let [h, l] = m >= n ? [m, n] : [n, m];
+  if (h === 0 || l === 0) return 0;
+  if (l === 1) return 1;
+  let arr = Array(h).fill(1);
+  for (let i = 0; i < l - 1; i++) {
+    for (let j = i + 1; j < h; j++) {
+      if (j === i + 1) {
+        arr[j] = arr[j] * 2;
+        continue;
+      } else {
+        arr[j] = arr[j] + arr[j - 1];
+      }
+    }
+  }
+  return arr[h - 1];
+}
+```
+
+Runs really fast and put me in the top 80% for both speed and memory. 
+
+Try as I might, I couldn't find a solution for figuring out the next number in the sequence of the diagonal. That would have likely been the fastest way to it.
