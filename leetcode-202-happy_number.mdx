@@ -1,0 +1,73 @@
+---
+title: "Leetcode 202: Happy Number"
+date: '2023-09-04'
+tags: ['leetcode']
+---
+
+## The Problem:
+Write an algorithm to determine if a number n is happy.
+
+A happy number is a number defined by the following process:
+
+Starting with any positive integer, replace the number by the sum of the squares of its digits.
+
+Repeat the process until the number equals 1 (where it will stay), or it loops endlessly in a cycle which does not include 1.
+
+Those numbers for which this process ends in 1 are happy.
+
+Return true if n is a happy number, and false if not.
+
+#### Example 1:
+- Input: n = 19
+- Output: true
+#### Explanation:
+- 12 + 92 = 82
+- 82 + 22 = 68
+- 62 + 82 = 100
+- 12 + 02 + 02 = 1
+#### Example 2:
+- Input: n = 2
+- Output: false
+#### Constraints:
+- 1 \<= n \<= 231 - 1
+
+## The Solution:
+
+Pen and paper'd this one. Doesn't matter how large of a number you start with, if you square the digits and add them together, you will eventually reduce down to a 1-3 digit number. The oddity is, un-happy numbers get caught in a loop. Easy enough, start a cycle, track the numbers with a Set, if you ever see them, return false, otherwise, keep looking for a set of digits that adds to 1.
+
+```ts
+function isHappy(n: number): boolean {
+  let num = n;
+  let numSet = new Set<number>();
+  numSet.add(n);
+  while (true) {
+    num = num
+      .toString()
+      .split("")
+      .map((number) => Math.pow(parseInt(number), 2))
+      .reduce((prev, curr) => prev + curr, 0);
+    if (num === 1) return true;
+    if (numSet.has(num)) return false;
+    numSet.add(num);
+  }
+}
+```
+Here's another oddity, often, numbers will 'reduce' down to a single digit. Turns out only 7 and 1 result in happy numbers, so another approach:
+
+```ts
+function isHappy(n: number): boolean {
+  let num = n;
+  let numSet = new Set<number>([0, 2, 3, 4, 5, 6, 8, 9]);
+  while (true) {
+    num = num
+      .toString()
+      .split("")
+      .map((number) => Math.pow(parseInt(number), 2))
+      .reduce((prev, curr) => prev + curr, 0);
+    if (num === 1) return true;
+    if (numSet.has(num)) return false;
+  }
+}
+```
+
+This approach tends to be the fastest. You could also add other numbers that pop up often that result in unhappy numbers like: 37, 64, ... to speed up cycles.
