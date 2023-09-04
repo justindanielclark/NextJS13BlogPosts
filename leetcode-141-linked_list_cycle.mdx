@@ -1,0 +1,86 @@
+---
+title: "Leetcode 141: Linked List Cycle"
+date: '2023-09-03'
+tags: ['leetcode']
+---
+
+## The Problem:
+Given head, the head of a linked list, determine if the linked list has a cycle in it.
+
+There is a cycle in a linked list if there is some node in the list that can be reached again by continuously following the next pointer. Internally, pos is used to denote the index of the node that tail's next pointer is connected to. Note that pos is not passed as a parameter.
+
+Return true if there is a cycle in the linked list. Otherwise, return false.
+
+#### Constraints:
+
+The number of the nodes in the list is in the range [0, 104].
+-105 \<= Node.val \<= 105
+pos is -1 or a valid index in the linked-list.
+
+#### Follow Up:
+Follow up: Can you solve it using O(1) (i.e. constant) memory?
+
+## The Solution:
+
+The fine people at leetcode supplied the following class for use for the ListNode:
+
+```ts
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val?: number, next?: ListNode | null) {
+    this.val = val === undefined ? 0 : val;
+    this.next = next === undefined ? null : next;
+  }
+}
+```
+
+Below are both solutions I came up with.
+1. Create a map of list nodes by memory location. Declare a current node to the head and keep incrementing it. If ever the current node is found in the map, we have a loop. If the current node makes it to null, we have a straight list. Easy enough. Uses an additional O(n) of memory but finds out the moment that current is equal to a node already seen.
+2. Set current to the head and create a runner node. The runner node always advances by 2 while current only advances by 1. If runner ever hits null, we know we have a straight list. Otherwise, we are looking for the moment when runner === current. Should take more time on larger lists, but would likely be significantly faster on smaller lists given the time to create the map and allocate the memory for it. Takes O(1) additional memory.
+
+```ts
+// Runtime O(n) Memory O(n)
+function hasCycle(head: ListNode | null): boolean {
+  let node: ListNode = head;
+  let travelledNodes = new Map<ListNode, boolean>();
+  while (node) {
+    const currentNode = travelledNodes.get(node);
+    if (currentNode) {
+      return true;
+    }
+    travelledNodes.set(node, true);
+    node = node.next;
+  }
+  return false;
+}
+
+// Runtime O(n), Memory O(1)
+function hasCycle(head: ListNode | null): boolean {
+  let current = head;
+  let runner = head && head.next ? head.next.next : null;
+  while(runner !== null && current !== runner){
+      current = current.next;
+      runner = runner.next ? runner.next.next : null;
+  }
+  return runner !== null;
+};
+
+//Slightly different, but most performant on memory
+function hasCycle(head: ListNode | null): boolean {
+    const values = [head, head && head.next ? head.next.next : null] 
+    while(values[1] !== null && values[0] !== values[1]){
+        values[0] = values[0].next;
+        values[1] = values[1].next ? values[1].next.next : null;
+    }
+    return values[1] !== null;
+};
+```
+
+Here's the perfomance with the first approach:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/leetcode141SpeedWithMap.png" alt="leetcode141SpeedWithMap" />
+
+Here's the performance with the third approach:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/leetcode141SpeedWithArr.png" alt="leetcode141SpeedWithArr" />
+
+Honestly, its not that big of a difference in either way, but I think the first one is much easier to reason about.
