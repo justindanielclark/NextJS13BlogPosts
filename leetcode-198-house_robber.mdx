@@ -1,0 +1,64 @@
+
+
+## The Problem
+You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security systems connected and it will automatically contact the police if two adjacent houses were broken into on the same night.
+
+Given an integer array nums representing the amount of money of each house, return the maximum amount of money you can rob tonight without alerting the police.
+
+#### Example 1:
+- Input: nums = [1,2,3,1]
+- Output: 4
+#### Explanation: 
+- Rob house 1 (money = 1) and then rob house 3 (money = 3).
+- Total amount you can rob = 1 + 3 = 4.
+
+#### Example 2:
+- Input: nums = [2,7,9,3,1]
+- Output: 12
+#### Explanation: 
+- Rob house 1 (money = 2), rob house 3 (money = 9) and rob house 5 (money = 1).
+- Total amount you can rob = 2 + 9 + 1 = 12.
+
+#### Constraints:
+- 1 \<= nums.length \<= 100
+- 0 \<= nums[i] \<= 400
+
+## The Solution
+
+While tempted into a depth first recursive path finding solution from the start, I am convinced to drop it after realizing that we can structure the problem as a series of steps which, like hop scotch, all end at the same place. From that place, we can disgard any 'path' that got there that produced less value than its competitors and continue the hunt from there. This leads to a solution that is O(n) in time complexity and O(1) in space.
+
+Essentially, we track the value of the robber at their current index assuming they did not rob last turn and we track the value assuming they did rob in one array.
+
+In a second array, we track the value if the robber robs, and the value if the robber does not rob, and the value from two indexes ago where the player robbed. In this array, if arr[1] > arr[2], then we can disgard the 'path' for arr[2]. Vice-versa if the other way around. Then we iterate on thru.
+
+```ts
+function rob(nums: number[]): number {
+  const this_turn: number[] = [
+    //Did Rob
+    0,
+    //Didn't Rob
+    0,
+  ];
+  const next_turn: number[] = [
+    //Did Rob
+    0,
+    //Didn't Rob
+    0, 0,
+  ];
+  for (let i = 0; i < nums.length; i++) {
+    // Have the Turn that Can Rob Do So
+    next_turn[0] = this_turn[1] + nums[i];
+    // Have the Turn That Can Rob Skip
+    next_turn[1] = this_turn[1];
+    // Have the Turn That Couldn't Rob Advance
+    next_turn[2] = this_turn[0];
+
+    //Advance the Turn
+    this_turn[0] = next_turn[0];
+    this_turn[1] = next_turn[1] > next_turn[2] ? next_turn[1] : next_turn[2];
+  }
+  return this_turn[0] > this_turn[1] ? this_turn[0] : this_turn[1];
+}
+```
+
+The only way I can conceive of speeding this up is having all the values stored in a single 5 length array so memory access is faster. Perhaps make it 6 long and store the iterating variable in there as well...
