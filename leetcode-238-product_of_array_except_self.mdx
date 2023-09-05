@@ -1,0 +1,71 @@
+---
+title: "Leetcode 238: Product of Array Except Self"
+date: '2023-09-05'
+tags: ['leetcode', 'neetcode']
+---
+
+Neetcode Set: Arrays & Hashing
+Neetcode Problem #: 6/9
+Difficulty: Medium
+
+## The Problem:
+Given an integer array nums, return an array answer such that answer[i] is equal to the product of all the elements of nums except nums[i].
+
+The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.
+
+You must write an algorithm that runs in O(n) time and without using the division operation.
+
+#### Example 1:
+- Input: nums = [1,2,3,4]
+- Output: [24,12,8,6]
+#### Example 2:
+- Input: nums = [-1,1,0,-3,3]
+- Output: [0,0,9,0,0]
+#### Constraints:
+- 2 \<= nums.length \<= 10^5
+- -30 \<= nums[i] \<= 30
+
+The product of any prefix or suffix of nums is guaranteed to fit in a 32-bit integer.
+
+Follow up: Can you solve the problem in O(1) extra space complexity? (The output array does not count as extra space for space complexity analysis.)
+
+## The Solution:
+
+If you look at Example 1's input vs output, the easiest thing to note is that each output is just the total product of the input divided by its index. This falls apart however if any of the included nums in the arr are equal to 0.
+
+However, this does provide an oppurtunity for us to exit out early. If any two nums are equal to 0, the resultant array will always be 0's all the way out.
+
+Everything else is just handling the odd case where the number equals 0 and treating it differently, as the total product will need to be recalculated without that 0.
+
+```ts
+function productExceptSelf(nums: number[]): number[] {
+  const totalZeros = nums.reduce((prev, curr) => {
+    if (curr === 0) {
+      return prev + 1;
+    }
+    return prev;
+  }, 0);
+  if (totalZeros > 1) {
+    return Array.from({ length: nums.length }).fill(0) as number[];
+  }
+  const totalProduct = nums.reduce((prev, curr) => {
+    return prev * curr;
+  });
+
+  return nums.map((num) => {
+    if (num === 0) {
+      return nums.reduce((prev, curr) => {
+        if (curr === 0) {
+          return prev;
+        }
+        return prev * curr;
+      }, 1);
+    }
+    return totalProduct / num;
+  });
+}
+```
+
+Performed in the upper 80s for both memory and speed.
+
+Good deal!

@@ -1,0 +1,64 @@
+---
+title: "Leetcode 242: Valid Anagram"
+date: '2023-09-05'
+tags: ['leetcode', 'neetcode']
+---
+
+## The Problem
+
+Neetcode Set: Arrays & Hashing
+Neetcode Problem #: 2/9
+Difficulty: Easy
+
+Given two strings s and t, return true if t is an anagram of s, and false otherwise.
+
+An Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.
+
+#### Example 1:
+- Input: s = "anagram", t = "nagaram"
+- Output: true
+#### Example 2:
+- Input: s = "rat", t = "car"
+- Output: false
+#### Constraints:
+- 1 \<= s.length, t.length \<= 5 * 10^4
+- s and t consist of lowercase English letters.
+
+Follow up: What if the inputs contain Unicode characters? How would you adapt your solution to such a case?
+
+## The Solution
+
+First solution that jumps out in my mind is simply to track the number of occurances of each character, then make sure both strings have the same amounts for each. This can be done with a HashMap for characters and should account for all character types if we are using typescript. If the strings are not of equal length, we can disregard this request right off the bat. Normally I convert Maps to their array equivalents, but decided to use the built in iterator this time instead to avoid the clone work.
+
+```ts
+function isAnagram(s: string, t: string): boolean {
+  if (s.length !== t.length) return false;
+  const charMap = new Map<string, [number, number]>();
+  let sGet: [number, number] | undefined;
+  let tGet: [number, number] | undefined;
+  for (let i = 0; i < s.length; i++) {
+    sGet = charMap.get(s.substring(i, i + 1));
+    if (sGet) {
+      sGet[0] = sGet[0] + 1;
+    } else {
+      charMap.set(s.substring(i, i + 1), [1, 0]);
+    }
+    tGet = charMap.get(t.substring(i, i + 1));
+    if (tGet) {
+      tGet[1] = tGet[1] + 1;
+    } else {
+      charMap.set(t.substring(i, i + 1), [0, 1]);
+    }
+  }
+  const iterator = charMap.values();
+  let iteration = iterator.next();
+  while (true) {
+    if (iteration.value[0] !== iteration.value[1]) return false;
+    iteration = iterator.next();
+    if (iteration.done) break;
+  }
+  return true;
+}
+```
+
+Runs in the upper 80% for both categories on every submission.

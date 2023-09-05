@@ -1,0 +1,133 @@
+---
+title: "Leetcode 49: Group Anagrams"
+date: '2023-09-05'
+tags: ['leetcode', 'neetcode']
+---
+
+Neetcode Set: Arrays & Hashing
+Neetcode Problem #: 4/9
+Difficulty: Medium
+
+## The Problem
+Given an array of strings strs, group the anagrams together. You can return the answer in any order.
+
+An Anagram is a word or phrase formed by rearranging the letters of a different word or phrase, typically using all the original letters exactly once.
+
+#### Example 1:
+- Input: strs = ["eat","tea","tan","ate","nat","bat"]
+- Output: [["bat"],["nat","tan"],["ate","eat","tea"]]
+#### Example 2:
+- Input: strs = [""]
+- Output: [[""]]
+#### Example 3:
+- Input: strs = ["a"]
+- Output: [["a"]]
+#### Constraints:
+- 1 \<= strs.length \<= 10^4
+- 0 \<= strs[i].length \<= 100
+- strs[i] consists of lowercase English letters.
+
+## The Solution
+I came up with three solutions to this before I landed on one that performed any decent.
+
+The first solution just had too many steps. I created an array of objects which contained the sorted characters of the string and a copy of the original string and then sorted them based on their sorted string. From there, created a starting 'bucket' and dumped the first value into it. All subsequent strings were now in order, so they only needed to check the last bucketed item to see if they were an anagram. If they were, add it to the bucket. If not, make a new bucket.
+
+Performed in the bottom 20% for both speed and memory.
+
+
+```ts
+function groupAnagrams(strs: string[]): string[][] {
+  const data = strs
+    .map((str) => {
+      return {
+        sorted: str.split("").sort().join(""),
+        og: str,
+      };
+    })
+    .sort((a, b) => a.sorted.localeCompare(b.sorted));
+  const returnable = [[data[0].og]];
+  for (let i = 1; i < data.length; i++) {
+    if (data[i].sorted === data[i - 1].sorted) {
+      returnable[returnable.length - 1].push(data[i].og);
+    } else {
+      returnable.push([data[i].og]);
+    }
+  }
+  return returnable;
+}
+```
+
+My second solution was trash and performed even worse than the first. This is here for chuckles. I tried reducing the overall amount of checks but ended up creating a slower more memory intensive solution.
+
+``` ts
+function groupAnagrams(strs: string[]): string[][] {
+  const sorted = [...strs]
+    .sort((a, b) => a.length - b.length)
+    .map((str) => {
+      const charMap = new Map<string, number>();
+      for (let i = 0; i < str.length; i++) {
+        let charGet = charMap.get(str.substring(i, i + 1));
+        if (charGet) {
+          charMap.set(str.substring(i, i + 1), charGet + 1);
+          continue;
+        }
+        charMap.set(str.substring(i, i + 1), 1);
+      }
+      return { str, charMap };
+    });
+
+  const answer: { map: Map<string, number>; vals: string[] }[] = [{ map: sorted[0].charMap, vals: [sorted[0].str] }];
+  for (let i = 1; i < strs.length; i++) {
+    let found = false;
+    for (let j = 0; j < answer.length; j++) {
+      if (answer[j].vals[0].length !== sorted[i].str.length) continue;
+      if (mapsAreEqual(answer[j].map, sorted[i].charMap)) {
+        found = true;
+        answer[j].vals.push(sorted[i].str);
+        break;
+      }
+    }
+    if (!found) {
+      answer.push({ map: sorted[i].charMap, vals: [sorted[i].str] });
+    }
+  }
+  return answer.map((i) => i.vals);
+
+  function mapsAreEqual(map1: Map<string, number>, map2: Map<string, number>) {
+    const iterator = map1.keys();
+    let iteration = iterator.next();
+    while (!iteration.done) {
+      if (map1.get(iteration.value) !== map2.get(iteration.value)) return false;
+      iteration = iterator.next();
+    }
+    return true;
+  }
+}
+```
+
+The last solution just leverages knowledge from the first. Sort all of the chars in our strings. Create a map where the keys are these sorted strings. Reduce the map to an answer array and bingo bango.
+
+This was a really quick solution.
+
+```ts
+function groupAnagrams(strs: string[]): string[][] {
+  const sortedChars = strs.map((str) => str.split("").sort().join(""));
+  const sortedCharMap = new Map<string, string[]>();
+  sortedChars.forEach((str, i) => {
+    let strArr = sortedCharMap.get(str);
+    if (strArr) {
+      strArr.push(strs[i]);
+    } else {
+      sortedCharMap.set(str, [strs[i]]);
+    }
+  });
+  const answer: string[][] = [];
+  const iterator = sortedCharMap.values();
+  let iteration = iterator.next();
+  while (!iteration.done) {
+    answer.push(iteration.value);
+    iteration = iterator.next();
+  }
+  return answer;
+}
+```
