@@ -32,9 +32,15 @@ The input array words contains at least one word.
 ]
 ```
 #### Example 2:
-- Input: words = ["What","must","be","acknowledgment","shall","be"], maxWidth = 16
+- Input: 
+```ts 
+words = ["What","must","be",
+"acknowledgment","shall","be"], 
+maxWidth = 16
+```
 - Output:
-```ts [
+```ts 
+[
   "What   must   be",
   "acknowledgment  ",
   "shall be        "
@@ -43,7 +49,13 @@ The input array words contains at least one word.
 Explanation: Note that the last line is "shall be    " instead of "shall     be", because the last line must be left-justified instead of fully-justified.
 Note that the second line is also left-justified because it contains only one word.
 #### Example 3:
-- Input: words = ["Science","is","what","we","understand","well","enough","to","explain","to","a","computer.","Art","is","everything","else","we","do"], maxWidth = 20
+- Input: 
+```ts 
+words = ["Science","is","what","we","understand",
+"well","enough","to","explain","to","a","computer.",
+"Art","is","everything","else","we","do"];
+maxWidth = 20 
+```
 - Output:
 ```ts 
 [
@@ -116,11 +128,13 @@ Then, we simply split the words provided to us into lines and tell each line whe
 ```ts
 function fullJustify(words: string[], maxWidth: number): string[] {
   const lines: Line[] = [];
-  let [w, i] = [0, 0]; // w = words processed, i = line number
+  // w = words processed, i = line number
+  let [w, i] = [0, 0]; 
   while (w < words.length) {
     if (lines[i] == undefined) {
       lines[i] = new Line(maxWidth);
-      lines[i].addWord(words[w]); //One of the contraints was that words will never be longer than the maxWidth, so we know we dont need to check for this on the first word we enter.
+      //One of the contraints was that words will never be longer than the maxWidth, so we know we dont need to check for this on the first word we enter.
+      lines[i].addWord(words[w]); 
       w++;
       continue;
     }
@@ -131,6 +145,7 @@ function fullJustify(words: string[], maxWidth: number): string[] {
     }
     i++;
   }
-  return lines.map((line, idx) => line.consolidate(idx === lines.length - 1)); //Consolidate Left Justified if we are on the last line
+  //Consolidate Left Justified if we are on the last line
+  return lines.map((line, idx) => line.consolidate(idx === lines.length - 1)); 
 }
 ```
