@@ -1,0 +1,92 @@
+---
+title: "Leetcode 11: Container with Most Water"
+date: '2023-09-06'
+tags: ['leetcode', 'neetcode', 'medium']
+---
+
+### Neetcode Set: Two Pointers
+### Neetcode Problem \#: 4\/5
+
+## The Problem
+
+You are given an integer array height of length n. There are n vertical lines drawn such that the two endpoints of the ith line are (i, 0) and (i, height[i]).
+
+Find two lines that together with the x-axis form a container, such that the container contains the most water.
+
+Return the maximum amount of water a container can store.
+
+Notice that you may not slant the container.
+
+#### Example 1:
+- Input: height = [1,8,6,2,5,4,8,3,7]
+- Output: 49
+#### Explanation: 
+- The above vertical lines are represented by array [1,8,6,2,5,4,8,3,7]. In this case, the max area of water (blue section) the container can contain is 49.
+#### Example 2:
+- Input: height = [1,1]
+- Output: 1
+#### Constraints:
+- n == height.length
+- 2 \<= n \<= 105
+- 0 \<= height[i] \<= 104
+
+## The Solution
+
+This problem has a goofy name and problem description. We are given a bunch of heights. We want to compute the maximum area between two heights at two points.
+
+We can calculate area by multiplying the range between the two points by the smaller of the two heights. Essentially, we want to maximize both range and height to maximize area. 
+
+Out of the gate, I thought I had a brilliant solution that turned out to be less than ideal. The idea, in really generic psuedocode would be:
+- Figure out what the two biggest heights were
+- Calculate what would be possible for a given range supposing those two were the heights
+- Start at the maximum possible range
+- Record areas moving the range from left to right with a record of what the highest was
+- Reduce the range and recalculate what would be the maximum possible values with that range
+- Keep doing this until our recorded max is higher than whatever the possible range is given the above limitations
+
+```ts
+function maxArea(height: number[]) {
+  const largest = [...height].sort((a, b) => b - a);
+  let highest_possible = Number.MAX_SAFE_INTEGER;
+  let current_highest = 0;
+  let range = height.length - 1;
+  while (current_highest < highest_possible) {
+    highest_possible = range * largest[1];
+    for (let [i, j] = [0, range]; j < height.length; [i++, j++]) {
+      let lowest = height[i] < height[j] ? height[i] : height[j];
+      if (current_highest < lowest * range) current_highest = lowest * range;
+    }
+    range--;
+  }
+  return current_highest;
+}
+```
+This works fast supposing both of your high points are near the edges of the array, but completely falls apart if you have a massive jump in heights right next to each other, as it ends up checking every range combination. Imagine it running through this array for instance...
+
+```ts
+const testArr = [
+  1, 1, 1, ... x10000 ..., 1, 1, 1, 1000000000, 1000000000
+]
+```
+
+Time to hit the drawing board again.
+
+Given we want to maximize both range and height, why not just start with the maximum range, and simply move the pointers toward a place where each pointer was encouraged to increase? The below solutions does just that, and finds the answer all the same in O(n) time. 
+
+Much faster.
+
+```ts
+function maxArea(height: number[]) {
+  let max = 0;
+  let [left, right] = [0, height.length - 1];
+  while (left < right) {
+    max = Math.max(max, Math.min(height[left], height[right]) * (right - left));
+    if (Math.min(height[left], height[right]) === height[left]) {
+      left++;
+      continue;
+    }
+    right--;
+  }
+  return max;
+}
+```
