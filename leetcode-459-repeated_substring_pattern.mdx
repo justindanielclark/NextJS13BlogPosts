@@ -44,6 +44,7 @@ This seems slow and unoptimized, likely because it is.
 I figure there is some trick to this I haven't considered, and so I break out the pen and paper, and start to see if there is something clever I can do with pattern recognition.
 
 My first refining idea is to declare a Map with keys that represent the chars and values of arrays which are the positions of those chars. 
+
 I notice that for any string to have a valid repeating substring, none of those char's arrays could have a length of 1 and they would all have to share a common denominator. 
 
 If you take a simple enough string, you can start to see some patterns emerge that might be useful:
