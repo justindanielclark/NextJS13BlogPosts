@@ -1,0 +1,90 @@
+---
+title: "Leetcode 118: Pascal's Triangle"
+date: '2023-09-07'
+tags: ['leetcode', 'easy']
+---
+
+## The Problem:
+
+Given an integer numRows, return the first numRows of Pascal's triangle.
+
+In Pascal's triangle, each number is the sum of the two numbers directly above it as shown:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/PascalTriangleAnimated.gif" alt="PascalTriangleAnimatedGif" />
+
+#### Example 1:
+- Input: numRows = 5
+- Output: 
+```ts
+[[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1]]
+```
+#### Example 2:
+- Input: numRows = 1
+- Output: 
+```ts
+[[1]]
+```
+#### Constraints:
+1 \<= numRows \<= 30
+
+## The Solution:
+
+Not much to say about this solution mostly because it has to be brute forced given you need to return the entire Triangle.
+
+I wrote edge case returns for 0/1/2 row triangles for early returns but otherwise simply decided to start assuming the [1,1] portion of it had already been completed because I could easily build off of it for the rest of the solution.
+
+```ts
+function generate(numRows: number): number[][] {
+  //EDGE CASES
+  if (numRows === 0) {
+    return [];
+  }
+  if (numRows === 1) {
+    return [[1]];
+  }
+  let answer = [[1], [1, 1]];
+  if (numRows === 2) {
+    return answer;
+  }
+  // prev is our last entered array, next is the following
+  // prev becomes next on each loop, next simply has the values added to it of prev until we finish out.
+  for (let i = 1; i < numRows-1; i++) {
+    let prev = answer[i];
+    let next = [1];
+    for (let j = 0; j < prev.length - 1; j++) {
+      next.push(prev[j] + prev[j + 1]);
+    }
+    next.push(1);
+    answer.push(next);
+  }
+  return answer;
+}
+```
+
+This did variably well on performance and memory for leetcode. Sometimes it would score in the 20% range while other times it would score in the 80%.
+
+I optimized it a bit by predeclaring the size of the next array ahead of time so memory wouldn't have to rearrange in memory allocation if the size of the array got too big. This sped it up considerably and made it more consistent.
+
+```ts
+function generate(numRows: number): number[][] {
+  if (numRows === 0) {
+    return [];
+  }
+  if (numRows === 1) {
+    return [[1]];
+  }
+  let answer = [[1], [1, 1]];
+  if (numRows === 2) {
+    return answer;
+  }
+  for (let i = 1; i < numRows-1; i++) {
+    let prev = answer[i];
+    let next = Array(prev.length+1).fill(1);
+    for (let j = 0; j < prev.length - 1; j++) {
+      next[j+1] = prev[j] + prev[j + 1]
+    }
+    answer.push(next);
+  }
+  return answer;
+}
+```
