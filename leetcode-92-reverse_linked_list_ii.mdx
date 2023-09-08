@@ -1,0 +1,101 @@
+---
+title: "Leetcode 92: Reverse Linked List II"
+date: '2023-09-08'
+tags: ['leetcode', 'medium']
+---
+
+## The Problem
+
+Given the head of a singly linked list and two integers left and right where left \<= right, reverse the nodes of the list from position left to position right, and return the reversed list.
+
+### Example 1:
+- Input: 
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/reverseLinkedListII.jpg" alt="reverseLinkedList example" />
+```ts
+head = [1,2,3,4,5], left = 2, right = 4
+```
+- Output: 
+```ts
+[1,4,3,2,5]
+```
+
+### Example 2:
+- Input: 
+```ts
+head = [5], left = 1, right = 1
+```
+- Output: 
+```ts
+[5]
+```
+
+Constraints:
+
+The number of nodes in the list is n.
+- 1 \<= n \<= 500
+- -500 \<= Node.val \<= 500
+- 1 \<= left \<= right \<= n
+ 
+
+Follow up: Could you do it in one pass?
+
+## The Solution
+
+Any time we need to reverse a portion of a total list, my mind jumps to either recursion or simply an iterative solution where we create a new stack/array and store the components that need to be reversed, reverse them, and then rejoin them in to the original list. To rejoin them, we will need to keep track of some pointers for where we left off.
+
+When given an option between recursion or iteration, I tend to not like recursion in solutions where iterative solutions appear equally viable mostly because while other developers may state it makes for more elegant solutions, I tend to find it performs worse and requires a bit more thinking about to reason out why it works. Iterative solutions trade on declared datastructure memory allocation vs recursives call stack memory use.
+
+#### On to the solution:
+- In cases where left > 1, we will need to track the node immediately prior to the node at 'left' so we can rejoin the now reversed list by linking this node's next with the new start of the list. 
+- We will also always need to track the node at right + 1, so we can marry left's next to it, as the node at left will become the new right.
+- We will create a stack by iterating through the nodes until we hit left, then iterate from left to right, adding them into some declared storage. 
+- From there, we simply reverse out the wiring for the .next's for each node. If left > 1, we attach the node at left-1 to the start of newly reversed list. 
+- We always attach the last node in the list to right's original next node.
+- Then we just return the head. In the case where left > 1, thats the original head. In cases where left = 1, the new head of the list will be the node indicated by right.
+
+While some of the logic is repeated, I found it easier to reason about this solution by splitting actions into whether or not left started at 1 or not.
+
+```ts
+function reverseBetween(head: ListNode | null, left: number, right: number): ListNode | null {
+  //Edge Cases
+  if (left === right) {
+    return head;
+  }
+  let stack = new Array(right - left + 1);
+  let curr = head;
+  //Main
+  if (left === 1) {
+    for (let i = 0; i < right; i++) {
+      stack[stack.length - 1 - i] = curr;
+      curr = curr.next;
+    }
+    for (let i = 0; i < stack.length; i++) {
+      if (i !== stack.length - 1) {
+        stack[i].next = stack[i + 1];
+      } else {
+        stack[i].next = curr;
+      }
+    }
+    return stack[0];
+  } else {
+    for (let i = 1; i < left - 1; i++) {
+      curr = curr.next;
+    }
+    let start = curr;
+    curr = curr.next;
+    for (let i = 0; i < right - left + 1; i++) {
+      stack[stack.length - 1 - i] = curr;
+      curr = curr.next;
+    }
+    for (let i = 0; i < stack.length; i++) {
+      if (i !== stack.length - 1) {
+        stack[i].next = stack[i + 1];
+      } else {
+        stack[i].next = curr;
+      }
+    }
+    start.next = stack[0];
+    return head;
+  }
+}
+```
