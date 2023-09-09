@@ -9,18 +9,18 @@ tags: ['dsa']
 In my preparation for answering whiteboard style interview questions, I came across the use cases for a data structure I was unaware Javascript did not have a native implementation for. The Data Structure is a Heap, which can be structured as either a min-heap or a max-heap, which has some cool properties which define it.
 
 1. It can be stored in an array
-2. As items get added to it, it can be structured so it always returns the lowest (min heap) or highest value (max heap) of the array.
-3. Insertion is O(log(n)) in complexity at worst case, but O(1) at best
-4. Removal is O(log(n)) in complexity
-5. Searching is terrible at O(n)
+2. As items get added to it, it can be structured so it always returns the lowest \(min heap\) or highest value \(max heap\) of the array.
+3. Insertion is O\(log\(n\)\) in complexity at worst case, but O\(1\) at best
+4. Removal is O\(log\(n\)\) in complexity
+5. Searching is terrible at O\(n\)
 6. You can use a heap to return back an ordered array of items if you simply incrementally remove until the heap is empty.
 
 Heaps are binary trees where the following rules are always observed:
-- A parent is always higher in value (for max heaps) or lower in value (for min heaps) than all of its children
+- A parent is always higher in value \(for max heaps\) or lower in value \(for min heaps\) than all of its children
 - If you store everything in an array, you can always use the below rules to quickly navigate the heap:
 1. left child \= i \* 2 \+ 1
 2. right child \= i \* 2 \+ 2
-3. parent \= Math\.floor(i\/2);
+3. parent \= Math\.floor\(i\/2\);
 
 ## An Implementation
 
