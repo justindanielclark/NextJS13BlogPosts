@@ -99,7 +99,7 @@ Technically.... it works, but it isn't fast. Lets see why:
 We are repeating work! I'm lazy. My programs are faster if they can be lazy. They can be lazy if they can just remember a bit, so lets cache prior solutions and build on those. 
 
 Lets think of some key points, lets assume nums of [4,8], and a target of 12:
-- We need to know how many ways we can get from 0 -> 12 using every number from nums
+- We need to know how many ways we can get from 0 -> 12 using every number from nums. As we get closer to the target, there are more paths, so we need to start at the bottom and work our way up.
 - To do this, we need to know how many ways we can get to some number, x, before we can know how many paths there are to some other number y, which is the combination of x and some other number from nums
 - We need a base case. There is 1 way to get to 0, which is by having no numbers included in the sum. Think of a summed array of [].
 - We need to figure out how to use our nums with this base case. 
