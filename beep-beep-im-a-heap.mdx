@@ -1,0 +1,234 @@
+---
+title: "Beep! Beep! I'm a Heap!"
+date: '2023-09-09'
+tags: ['dsa']
+---
+
+## What is a Heap
+
+In my preparation for answering whiteboard style interview questions, I came across the use cases for a data structure I was unaware Javascript did not have a native implementation for. The Data Structure is a Heap, which can be structured as either a min-heap or a max-heap, which has some cool properties which define it.
+
+1. It can be stored in an array
+2. As items get added to it, it can be structured so it always returns the lowest (min heap) or highest value (max heap) of the array.
+3. Insertion is O(log(n)) in complexity at worst case, but O(1) at best
+4. Removal is O(log(n)) in complexity
+5. Searching is terrible at O(n)
+6. You can use a heap to return back an ordered array of items if you simply incrementally remove until the heap is empty.
+
+Heaps are binary trees where the following rules are always observed:
+- A parent is always higher in value (for max heaps) or lower in value (for min heaps) than all of its children
+- If you store everything in an array, you can always use the below rules to quickly navigate the heap:
+1. left child \= i \* 2 \+ 1
+2. right child \= i \* 2 \+ 2
+3. parent \= Math\.floor(i\/2);
+
+## An Implementation
+
+Below is my implementation of some helper interfaces as well as a min and max heap in typescript. The helper interfaces ensure that whatever generic data you pass to the heap always has a valid way to compare values against itself and be turned into a string. The heaps are typed based on what they take in as their stored valueset.
+
+```ts
+
+interface Stringable {
+  toString: () => string;
+}
+interface Comparable<T> {
+  compareTo: (item: T) => 0 | 1 | -1;
+}
+class MinHeap<T extends Comparable<T> & Stringable> implements Stringable {
+  private _heap: T[];
+  public constructor(arr?: T[]) {
+    this._heap = [];
+    if (arr) {
+      arr.forEach((item) => this.insert(item));
+    }
+  }
+  //*
+  public insert(item: T) {
+    this._heap.push(item);
+    let i = this._heap.length - 1;
+    let parent = Math.floor(i / 2);
+    while (parent !== i) {
+      if (this._heap[i].compareTo(this._heap[parent]) < 0) {
+        [this._heap[i], this._heap[parent]] = [
+          this._heap[parent],
+          this._heap[i],
+        ];
+        i = parent;
+        parent = Math.floor(i / 2);
+      } else {
+        break;
+      }
+    }
+  }
+  //*
+  public remove(): T | null {
+    if (this._heap.length == 0) return null;
+    const returnable = this._heap[0];
+    if (this._heap.length === 1) {
+      this._heap.pop();
+    } else {
+      this._heap[0] = this._heap.pop();
+    }
+    let i = 0;
+    while (i < this._heap.length - 1) {
+      let hasLeft = i * 2 + 1 < this._heap.length;
+      if (hasLeft) {
+        let hasRight = i * 2 + 2 < this._heap.length;
+        if (hasRight) {
+          if (
+            this._heap[i * 2 + 1] < this._heap[i * 2 + 2] &&
+            this._heap[i * 2 + 1] < this._heap[i]
+          ) {
+            [this._heap[i], this._heap[i * 2 + 1]] = [
+              this._heap[i * 2 + 1],
+              this._heap[i],
+            ];
+            i = i * 2 + 1;
+            continue;
+          } else if (this._heap[i * 2 + 2] < this._heap[i]) {
+            [this._heap[i], this._heap[i * 2 + 2]] = [
+              this._heap[i * 2 + 2],
+              this._heap[i],
+            ];
+            i = i * 2 + 2;
+            continue;
+          }
+          break;
+        }
+        if (this._heap[i * 2 + 1] < this._heap[i]) {
+          [this._heap[i], this._heap[i * 2 + 1]] = [
+            this._heap[i * 2 + 1],
+            this._heap[i],
+          ];
+        }
+        break;
+      }
+      break;
+    }
+    return returnable;
+  }
+  //*
+  public toString(): string {
+    if (this._heap.length === 0) return "The Min Heap is Empty";
+    let returnable = "[";
+    this._heap.forEach((item, idx, arr) => {
+      if (idx !== arr.length - 1) {
+        returnable += ` ${item.toString()} ,`;
+      } else {
+        returnable += ` ${item.toString()} ]`;
+      }
+    });
+    return returnable;
+  }
+}
+class MaxHeap<T extends Comparable<T> & Stringable> implements Stringable {
+  private _heap: T[];
+  public constructor(arr?: T[]) {
+    this._heap = [];
+    if (arr) {
+      arr.forEach((item) => this.insert(item));
+    }
+  }
+  //*
+  public insert(item: T) {
+    this._heap.push(item);
+    let i = this._heap.length - 1;
+    let parent = Math.floor(i / 2);
+    while (parent !== i) {
+      if (this._heap[i].compareTo(this._heap[parent]) === 1) {
+        [this._heap[i], this._heap[parent]] = [
+          this._heap[parent],
+          this._heap[i],
+        ];
+        i = parent;
+        parent = Math.floor(i / 2);
+      } else {
+        break;
+      }
+    }
+  }
+  //*
+  public remove(): T | null {
+    if (this._heap.length == 0) return null;
+    const returnable = this._heap[0];
+    if (this._heap.length === 1) {
+      this._heap.pop();
+    } else {
+      this._heap[0] = this._heap.pop();
+    }
+    let i = 0;
+    while (i < this._heap.length - 1) {
+      let hasLeft = i * 2 + 1 < this._heap.length;
+      if (hasLeft) {
+        let hasRight = i * 2 + 2 < this._heap.length;
+        if (hasRight) {
+          if (
+            this._heap[i * 2 + 1] > this._heap[i * 2 + 2] &&
+            this._heap[i * 2 + 1] > this._heap[i]
+          ) {
+            [this._heap[i], this._heap[i * 2 + 1]] = [
+              this._heap[i * 2 + 1],
+              this._heap[i],
+            ];
+            i = i * 2 + 1;
+            continue;
+          } else if (this._heap[i * 2 + 2] > this._heap[i]) {
+            [this._heap[i], this._heap[i * 2 + 2]] = [
+              this._heap[i * 2 + 2],
+              this._heap[i],
+            ];
+            i = i * 2 + 2;
+            continue;
+          }
+          break;
+        }
+        if (this._heap[i * 2 + 1] > this._heap[i]) {
+          [this._heap[i], this._heap[i * 2 + 1]] = [
+            this._heap[i * 2 + 1],
+            this._heap[i],
+          ];
+        }
+        break;
+      }
+      break;
+    }
+    return returnable;
+  }
+  //*
+  public toString(): string {
+    if (this._heap.length === 0) return "The Min Heap is Empty";
+    let returnable = "[";
+    this._heap.forEach((item, idx, arr) => {
+      if (idx !== arr.length - 1) {
+        returnable += ` ${item.toString()} ,`;
+      } else {
+        returnable += ` ${item.toString()} ]`;
+      }
+    });
+    return returnable;
+  }
+}
+
+```
+
+And to test it:
+```ts
+const someNumbers = [5, 7, 3, 4, 1, 0, 9, 8, 2, 6];
+const heap = new MinHeap<NumberData>();
+someNumbers.forEach((num) => heap.insert(new NumberData(num)));
+
+let removed: NumberData | null;
+while (true) {
+  removed = heap.remove();
+  if (removed) {
+    console.log(removed.toString());
+    continue;
+  }
+  break;
+}
+```
+## Key Takeaways
+
+The ability for heaps to return an ordered array is awesome. They tend to perform worse than simply using quicksort (the default v8 implementation of sort in JS) on an array, however.
+
+That said, if you have a bunch of data you are going to be adding at random and dont know ahead of time what it is and later need it returned in order, using a heap to hold it first should outperform stashing it into an array and then moving from there.
