@@ -1,0 +1,133 @@
+---
+title: "Leetcode 337: Combinatin Sum IV"
+date: '2023-09-01'
+tags: ['leetcode', 'medium']
+---
+
+## The Problem
+
+Given an array of distinct integers nums and a target integer target, return the number of possible combinations that add up to target.
+
+The test cases are generated so that the answer can fit in a 32-bit integer.
+
+#### Example 1:
+- Input: nums = [1,2,3], target = 4
+- Output: 7
+#### Explanation:
+The possible combination ways are:
+```ts
+(1, 1, 1, 1)
+(1, 1, 2)
+(1, 2, 1)
+(1, 3)
+(2, 1, 1)
+(2, 2)
+(3, 1)
+```
+Note that different sequences are counted as different combinations.
+
+#### Example 2:
+- Input: nums = [9], target = 3
+- Output: 0
+ 
+
+#### Constraints:
+- 1 \<= nums.length \<= 200
+- 1 \<= nums[i] \<= 1000
+- All the elements of nums are unique.
+- 1 \<= target \<= 1000
+
+#### Follow up: 
+What if negative numbers are allowed in the given array? How does it change the problem? What limitation we need to add to the question to allow negative numbers?
+
+
+## The Solution
+
+This one was a doozy. There's quite a bit to unpack from it, simply because there are a myriad of seemingly good ways to approach the problem. Before we start, I want to observe something explicitly from the provided example above:
+
+```ts
+//The possible combination ways are:
+(1, 1, 1, 1)
+(1, 1, 2)
+(1, 2, 1)
+(1, 3)
+(2, 1, 1)
+(2, 2)
+(3, 1)
+```
+If we go through the examples we will notice a curious trend. They look a lot like paths where the start of the path is some starting num from the nums array and the next number is either itself again (if it can) or some other branching choice in the num array. We can visualize this out as a tree, starting at a value of 0.
+
+I drew up a trie below that shows these paths:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/CombinationSumIVSum.png" alt="CombinationSumIVSum.png" />
+
+With this in mind, we have a starting ground to build out some code under the following psuedo code:
+- Track count with 0.
+- Recursively add every number in nums such that the sum of that number and a provided sum is less than the target. We can terminate if the sum is greater than the target 
+- If we hit the target, increment count and return as we dont need to keep iterating.
+
+```ts
+function combinationSum4(nums: number[], target: number): number {
+  let count = 0;
+  const sorted = nums.filter((num) => num <= target).sort((a, b) => a - b);
+  traverse(0);
+  function traverse(sum: number) {
+    let newSum: number;
+    for (let i = 0; i < sorted.length; i++) {
+      newSum = sum + sorted[i];
+      if (newSum === target) {
+        count++;
+        return;
+      }
+      if (newSum > target) {
+        return;
+      }
+      traverse(newSum);
+    }
+    return;
+  }
+  return count;
+}
+```
+
+The above will increment upon discovering every possible path to some target.
+
+Technically.... it works, but it isn't fast. Lets see why:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/CombinationSumIVSum2.png" alt="CombinationSumIVSum2.png" />
+
+We are repeating work! I'm lazy. My programs are faster if they can be lazy. They can be lazy if they can just remember a bit, so lets cache prior solutions and build on those. 
+
+Lets think of some key points, lets assume nums of [4,8], and a target of 12:
+- We need to know how many ways we can get from 0 -> 12 using every number from nums
+- To do this, we need to know how many ways we can get to some number, x, before we can know how many paths there are to some other number y, which is the combination of x and some other number from nums
+- We need a base case. There is 1 way to get to 0, which is by having no numbers included in the sum. Think of a summed array of [].
+- We need to figure out how to use our nums with this base case. 
+- We have precisely 1 way to get to 4, because 4 is our lowest base number. If we have a some iteration count, and reduce it by our checked number, and it reduces to 0, we have a cache showing there is 1 way to 0. Now there is one way to our lowest number. 
+- Assume we are looking to see about how to get to 8. Earlier we said there was 1 way to get to 4. If we reduce 8 by 4, and check our cache at a value of 4, we can see that we already found 1 way there. So to get to 8, we have 1 way.
+- But now, we should also just look at 8. We reduce the number we are looking at achieving by 8 and hit our cache for 0, which has 1 way to arrive at it. We already have 1 way to arrive at 8 from when we checked 4. Lets add them. We have 2 ways to hit 8.
+- Before anything else will happen, we will get to 12. 12 - 4 gives us the cache at 8. We know there are 2 ways to get there. When we look at the num 8, we see there is 1 way to get to the cache at 4. The cache from 12 is the combination.
+- We have 3 ways reach 12, based on prior discovered paths.
+
+The below does this approach.
+
+```ts
+function combinationSum4(nums: number[], target: number): number {
+  let cache = new Map<number, number>([[0, 1]]);
+  let get: number | undefined;
+  for (let total = 1; total < target + 1; total++) {
+    cache.set(total, 0);
+    for (let i = 0; i < nums.length; i++) {
+      get = cache.get(total - nums[i]);
+      if (get !== undefined) {
+        cache.set(total, cache.get(total) + get);
+      }
+    }
+  }
+  return cache.get(target);
+}
+```
+
+I struggled a lot with this problem in the transition from implementation 1 to implementation 2. I had to look up major clues as to implementation for the base case, despite making the observations that caching was likely the work that needed to be done.
+
+Enjoyed the problem, learned a lot from it.
