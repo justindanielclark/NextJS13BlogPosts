@@ -1,0 +1,218 @@
+---
+title: "Leetcode 135: Candy"
+date: '2023-09-13'
+tags: ['leetcode', 'hard']
+---
+
+## The Problem
+There are n children standing in a line. Each child is assigned a rating value given in the integer array ratings.
+
+You are giving candies to these children subjected to the following requirements:
+- Each child must have at least one candy.
+- Children with a higher rating get more candies than their neighbors.
+- Return the minimum number of candies you need to have to distribute the candies to the children.
+
+#### Example 1:
+- Input: ratings = [1,0,2]
+- Output: 5
+- Explanation: You can allocate to the first, second and third child with 2, 1, 2 candies respectively.
+#### Example 2:
+- Input: ratings = [1,2,2]
+- Output: 4
+- Explanation: You can allocate to the first, second and third child with 1, 2, 1 candies respectively. The third child gets 1 candy because it satisfies the above two conditions.
+ 
+#### Constraints:
+- n == ratings.length
+- 1 \<= n \<= 2 * 10^4
+- 0 \<= ratings[i] \<= 2 * 10^4
+
+
+## The Solution
+
+I tackled this problem 4 times before I got it right. The first two attempts were failures mainly because I misunderstood part of the rules. The third attempt a culmination of the approach I was making but was a bust because it was slow. Last attempt I got it right. Lets go through each attempt:
+
+#### Attempt 1:
+
+The idea behind this approach was that the ratings don't matter nearly as much as the trends of the slopes in gains and losses in ratings. Moving from 1 -\> 2 -\> 3 -\> 4 would mean the 4th kid would necessarily receive 4 candy. However, moving from 1 -\> 4 means that the kid with a 4 rating would only receive 2 candies.
+
+With this in mind, if we can find the lowest point, we can move from there and increase candy counts. That's the logic anyways.
+
+So pseudocode:
+- track slope, your current position, and the next position. Also store something to track where the lowest slope is.
+- if next > curr, your slope is on the rise, vice-versa alternatively. Every iteration if slope is decreasing, check if the current slope is the lowest we have sen, and if so record a new lowest position
+- Once we know the lowest point, iterate to the left of it tracking increases in candy amounts and decreases, same for the right
+```ts
+function candy1(ratings: number[]): number {
+  if (ratings.length === 0) return 0;
+  let candyCount = 0;
+  let lowest = 0;
+  let lowestIndex = 0;
+  let slope = 0;
+  let curr = 0;
+  let next = 0;
+  for (let i = 1; i < ratings.length; i++) {
+    curr = ratings[i - 1];
+    next = ratings[i];
+    if (curr > next) {
+      slope--;
+      if (slope < lowest) {
+        lowest = slope;
+        lowestIndex = i;
+      }
+    }
+    if (curr < next) {
+      slope++;
+    }
+  }
+  slope = 0;
+  for (let i = lowestIndex; i < ratings.length; i++) {
+    candyCount += slope + 1;
+    if (i + 1 < ratings.length) {
+      curr = ratings[i];
+      next = ratings[i + 1];
+      if (curr > next) {
+        slope--;
+      }
+      if (curr < next) {
+        slope++;
+      }
+    }
+  }
+  if (lowestIndex !== 0) {
+    slope = 1;
+    for (let i = lowestIndex - 1; i >= 0; i--) {
+      candyCount += slope + 1;
+      if (i - 1 > 0) {
+        curr = ratings[i];
+        next = ratings[i - 1];
+        if (curr > next) {
+          slope--;
+        }
+        if (curr < next) {
+          slope++;
+        }
+      }
+    }
+  }
+  return candyCount;
+}
+```
+This approach fails mainly because it does not account for the following reason: Imagine an input of [1,2,2]. The 2nd 2 would be given the same amount of candy as the 1st 2, but this is a violation of the rules.
+
+#### Attempt 2:
+
+This approach attempted to answer the needs of the first while abandoning the whole idea of finding the lowest slope. Instead, we just greedily start at idx 0, and then backtrack and increase counts if we need to.
+
+```ts
+function candy2(ratings: number[]): number {
+  let candies = 1;
+  let power = 1;
+  for (let i = 1; i < ratings.length; i++) {
+    if (ratings[i - 1] < ratings[i]) {
+      power++;
+      candies += power;
+      continue;
+    }
+    if (ratings[i - 1] === ratings[i]) {
+      power = 1;
+      candies += power;
+      continue;
+    }
+    power = 1;
+    candies += 1;
+    for (let j = i; j > 0; j--) {
+      if (ratings[j - 1] > ratings[j]) {
+        candies += 1;
+        continue;
+      }
+      break;
+    }
+  }
+  return candies;
+}
+```
+
+This also fails in instances where you have repeated values for ratings. 
+
+#### Attempt 3:
+
+We finally eeked out all the errors with counting with this approach. The idea is we move from left to right until we need to backtrack. This gives us an accurate answer every time.
+
+```ts
+function candy3(ratings: number[]): number {
+  if (ratings.length === 0) return 0;
+  let answer = new Array(ratings.length).fill(-1);
+  answer[0] = 1;
+  let power = 1;
+  for (let i = 1; i < ratings.length; i++) {
+    if (ratings[i - 1] < ratings[i]) {
+      power++;
+      answer[i] = power;
+      continue;
+    }
+    if (ratings[i - 1] === ratings[i]) {
+      power = 1;
+      answer[i] = power;
+      continue;
+    }
+    if (ratings[i - 1] > ratings[i]) {
+      power = 1;
+      answer[i] = power;
+      for (let j = i; j > 0; j--) {
+        if (ratings[j - 1] > ratings[j] && answer[j - 1] === answer[j]) {
+          answer[j - 1] = answer[j - 1] + 1;
+          continue;
+        }
+        break;
+      }
+    }
+  }
+
+  return answer.reduce((prev, curr) => {
+    return curr + prev;
+  }, 0);
+}
+```
+
+It has a core problem though. Imagine this input:
+```ts
+[10,9,8,7,6,5,4,3,2,1]
+```
+This will take n\^2 operations to work, so this is slow as all get out.
+
+### Attempt 4:
+
+I land on my last approach. Its a two pass from left to right where we track the necessary values and then a pass from right to left where we do the same but overwrite the lesser recorded values. Works like a charm, significantly faster:
+
+```ts
+function candy4(ratings: number[]): number {
+  if (ratings.length === 0) return 0;
+  let answer = new Array(ratings.length).fill(1);
+  let power = 1;
+  let candyCount = 0;
+  answer[0] = 1;
+  for (let i = 1; i < ratings.length; i++) {
+    if (ratings[i - 1] < ratings[i]) {
+      power++;
+    } else {
+      power = 1;
+    }
+    answer[i] = power;
+  }
+  power = 1;
+  candyCount += answer[answer.length - 1];
+  for (let j = ratings.length - 2; j >= 0; j--) {
+    if (ratings[j + 1] < ratings[j]) {
+      power++;
+      if (answer[j] < power) {
+        answer[j] = power;
+      }
+    } else {
+      power = 1;
+    }
+    candyCount += answer[j];
+  }
+  return candyCount;
+}
+```
+Fun problem. Probably a stellar interview question.
