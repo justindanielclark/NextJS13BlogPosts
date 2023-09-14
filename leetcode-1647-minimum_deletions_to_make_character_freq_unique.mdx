@@ -1,0 +1,79 @@
+---
+title: "Leetcode 1647: Minimum Deletions To Make Character Frequency Unique"
+date: '2023-09-12'
+tags: ['leetcode', 'medium']
+---
+
+## The Problem
+A string s is called good if there are no two different characters in s that have the same frequency.
+
+Given a string s, return the minimum number of characters you need to delete to make s good.
+
+The frequency of a character in a string is the number of times it appears in the string. For example, in the string "aab", the frequency of 'a' is 2, while the frequency of 'b' is 1.
+
+#### Example 1:
+- Input: s = "aab"
+- Output: 0
+- Explanation: s is already good.
+
+#### Example 2:
+- Input: s = "aaabbbcc"
+- Output: 2
+- Explanation: You can delete two 'b's resulting in the good string "aaabcc".
+- Another way it to delete one 'b' and one 'c' resulting in the good string "aaabbc".
+
+#### Example 3:
+- Input: s = "ceabaacb"
+- Output: 2
+- Explanation: You can delete both 'c's resulting in the good string "eabaab".
+- Note that we only care about characters that are still in the string at the end (i.e. frequency of 0 is ignored).
+
+#### Constraints:
+  - 1 \<= s.length \<= 10^5
+  - s contains only lowercase English letters.
+
+## The Solution
+
+Pretty easy problem, simply because the return only cares about the number of deletions, but nothing about which characters are removed. Because of that constraint, we can focus everything on character counts, and do everything in four steps. 
+1. Iterate through the string and map each character to a hash with a count. Increment the count by 1 if we have seen it before
+2. Turn said map into an array of values of just the counts and sort it
+3. Declare some variable called numDeletions and set it to 0. Declare a variable named current and set it to the highest counted character count.
+4. Keep track of the last seen count, and ensure the next count is at least 1 less than it. If it isn't, acknowledge the difference between them + 1, add it to numDeletions, and move on with a new count less 1.
+5. If count ever hits 0, we can skip the whole needing to decrement count requirement, and instead just add the difference between the current count and 0
+6. Return num deletions
+
+Code is here:
+```ts
+function minDeletions(s: string): number {
+  const charMap = new Map<string, number>();
+  let charGet: number | undefined;
+  for (let i = 0; i < s.length; i++) {
+    charGet = charMap.get(s.substring(i, i + 1));
+    if (charGet === undefined) {
+      charMap.set(s.substring(i, i + 1), 1);
+      continue;
+    }
+    charMap.set(s.substring(i, i + 1), charGet + 1);
+  }
+  let numDeletions = 0;
+  const numbers = Array.from(charMap.values()).sort((a, b) => b - a);
+  let current = numbers[0];
+  for (let i = 1; i < numbers.length; i++) {
+    if (current === 0) {
+      numDeletions += numbers[i];
+      continue;
+    }
+    if (numbers[i] < current) {
+      current = numbers[i];
+      continue;
+    }
+    numDeletions += numbers[i] - current + 1;
+    current--;
+  }
+  return numDeletions;
+}
+```
+
+Runs okay. Could likely be sped up if I knew, for instance, that we were only using the lowercase set of chars (could pre-declare an array instead of having to use a map). Could also likely be sped up by forcing a loop break once we hit count 0 and simply summing up the remainder of the char counts.
+
+Perfoms variably well on repeat tests.
