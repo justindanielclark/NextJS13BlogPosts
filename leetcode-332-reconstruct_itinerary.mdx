@@ -1,0 +1,246 @@
+---
+title: "Leetcode 332: Reconstruct Itinerary"
+date: '2023-09-14'
+tags: ['leetcode', 'hard']
+---
+
+## The Problem
+You are given a list of airline tickets where tickets\[i\] = \[fromi, toi\] represent the departure and the arrival airports of one flight. Reconstruct the itinerary in order and return it.
+
+All of the tickets belong to a man who departs from "JFK", thus, the itinerary must begin with "JFK". If there are multiple valid itineraries, you should return the itinerary that has the smallest lexical order when read as a single string.
+
+For example, the itinerary \["JFK", "LGA"\] has a smaller lexical order than \["JFK", "LGB"\].
+You may assume all tickets form at least one valid itinerary. You must use all the tickets once and only once.
+
+#### Example 1:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/reconstructItineraryExample1.jpg" alt="reconstructItineraryExample1" />
+- Input: 
+```ts 
+tickets = [["MUC","LHR"],["JFK","MUC"],["SFO","SJC"],["LHR","SFO"]]
+```
+- Output: 
+```ts
+["JFK","MUC","LHR","SFO","SJC"]
+```
+#### Example 2:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/reconstructItineraryExample2.jpg" alt="reconstructItineraryExample2" />
+- Input: 
+```ts 
+tickets = [["JFK","SFO"],["JFK","ATL"],["SFO","ATL"],["ATL","JFK"],["ATL","SFO"]]
+```
+- Output: 
+```ts
+["JFK","ATL","JFK","SFO","ATL","SFO"]
+```
+Explanation: Another possible reconstruction is \["JFK", "SFO", "ATL", "JFK", "ATL", "SFO"\] but it is larger in lexical order.
+
+## The Solution:
+
+I tackled this purely as an exercise in practicing Depth First Search wherein it was incentivized to take the path that was lexigraphical in ordering until it figured it that didn't work. My implementation was below. I set up maps that both tied source nodes to an array that had their listed priority nodes as well as a map that showed how many tickets remained from a source node to a destination. The example didn't explicity state it was the case, but I imagined that a source could be required to visit a destination multiple times.
+
+At the top of the code are a bunch of test cases I built designed to throw a wrench into the searching.
+
+```ts
+// const tickets = [
+//   ["MUC", "LHR"],
+//   ["JFK", "MUC"],
+//   ["SFO", "SJC"],
+//   ["LHR", "SFO"],
+// ];
+// const tickets = [
+//   ["JFK", "BBB"],
+//   ["JFK", "CCC"],
+//   ["CCC", "DDD"],
+//   ["DDD", "JFK"],
+// ];
+// const tickets = [
+//   ["JFK", "SFO"],
+//   ["JFK", "ATL"],
+//   ["SFO", "ATL"],
+//   ["ATL", "JFK"],
+//   ["ATL", "SFO"],
+// ];
+const tickets = [
+  ["BBB", "AAA"],
+  ["JFK", "BBB"],
+  ["JFK", "BBB"],
+  ["AAA", "XXX"],
+  ["YYY", "JFK"],
+  ["DDD", "YYY"],
+  ["BBB", "FFF"],
+  ["BBB", "DDD"],
+  ["FFF", "EEE"],
+  ["EEE", "GGG"],
+  ["GGG", "BBB"],
+];
+
+function findItinerary(tickets: string[][]): string[] {
+  //For storing Lexigraphical Ordering
+  const priorityMap = new Map<string, string[]>();
+  //For storing remaining tickets
+  const ticketMap = new Map<string, Map<string, number>>();
+  //Build Out Maps
+  for (let i = 0; i < tickets.length; i++) {
+    let [from, to] = tickets[i];
+    let t_map = ticketMap.get(from);
+    if (t_map) {
+      if (t_map.get(to)) {
+        t_map.set(to, t_map.get(to) + 1);
+      } else {
+        t_map.set(to, 1);
+      }
+      let p_arr = priorityMap.get(from);
+      if (p_arr) {
+        if (p_arr.find((i) => i === to) == undefined) {
+          p_arr.push(to);
+        }
+      } else {
+        priorityMap.set(from, [to]);
+      }
+    } else {
+      ticketMap.set(from, new Map([[to, 1]]));
+      priorityMap.set(from, [to]);
+    }
+  }
+  //Sort Priority Maps
+  Array.from(priorityMap.values()).forEach((arr) => arr.sort((a, b) => a.localeCompare(b)));
+  let flights = 0;
+  let itinerary = new Array(tickets.length + 1).fill("") as string[];
+  itinerary[0] = "JFK";
+  let currentLoc: string = itinerary[0];
+  let backtrack: string | undefined;
+  let next_i: number = 0;
+  let foundValid: boolean = false;
+  let canLookAhead: boolean = false;
+  while (flights < tickets.length) {
+    //! Happy Path
+    if (backtrack === undefined) {
+      let priorityArr = priorityMap.get(currentLoc);
+      if (priorityArr) {
+        canLookAhead = true;
+      }
+      //We are looking through the priority array for a valid next visit
+      while (canLookAhead && !foundValid && next_i < priorityArr.length) {
+        let ticketCount = ticketMap.get(currentLoc).get(priorityArr[next_i]);
+        if (ticketCount === 0) {
+          next_i++;
+          continue;
+        }
+        foundValid = true;
+      }
+      //! Happy Path
+      if (foundValid) {
+        //Reduce Visits By 1
+        ticketMap.get(currentLoc).set(priorityArr[next_i], ticketMap.get(currentLoc).get(priorityArr[next_i]) - 1);
+        //Add to Itinerary
+        itinerary[flights + 1] = priorityArr[next_i];
+        //Reset Tracker Vars for Next Loop
+        foundValid = false;
+        next_i = 0;
+        flights++;
+        currentLoc = itinerary[flights];
+        canLookAhead = false;
+      }
+      //! Sad Path, We Can't Find A Valid Continuance, We Need To Start Backtracking
+      else {
+        backtrack = currentLoc; // We can't visit here again
+        let [last_from, last_to] = [itinerary[flights - 1], itinerary[flights]]; //We need to restore our ticketmap numbers
+        ticketMap.get(last_from).set(last_to, ticketMap.get(last_from).get(last_to) + 1);
+        flights--; // We need to take a step back
+        canLookAhead = false;
+        currentLoc = itinerary[flights];
+      }
+    } else {
+      //! We Are Backtracking
+      let priorityArr = priorityMap.get(currentLoc);
+      if (priorityArr) {
+        next_i = priorityArr.findIndex((i) => i === backtrack) + 1;
+        canLookAhead = next_i < priorityArr.length;
+      }
+      while (canLookAhead && !foundValid && next_i < priorityArr.length) {
+        let ticketCount = ticketMap.get(currentLoc).get(priorityArr[next_i]);
+        if (ticketCount === 0) {
+          next_i++;
+          continue;
+        }
+        foundValid = true;
+      }
+      //! Happy Path
+      if (foundValid) {
+        //Reduce Visits By 1
+        ticketMap.get(currentLoc).set(priorityArr[next_i], ticketMap.get(currentLoc).get(priorityArr[next_i]) - 1);
+        //Add to Itinerary
+        itinerary[flights + 1] = priorityArr[next_i];
+        //Reset Tracker Vars for Next Loop
+        foundValid = false;
+        next_i = 0;
+        flights++;
+        currentLoc = itinerary[flights];
+        canLookAhead = false;
+        backtrack = undefined;
+      }
+      //! Sad Path, We Can't Find A Valid Continuance, We Need To Start Backtracking
+      else {
+        backtrack = currentLoc; // We can't visit here again
+        let [last_from, last_to] = [itinerary[flights - 1], itinerary[flights]]; //We need to restore our ticketmap numbers
+        ticketMap.get(last_from).set(last_to, ticketMap.get(last_from).get(last_to) + 1);
+        flights--; // We need to take a step back
+        canLookAhead = false;
+        currentLoc = itinerary[flights];
+      }
+    }
+  }
+  return itinerary;
+}
+```
+
+This performed moderately well in speed, but was a bit of a resource hog compared to other examples. Im certain I could reduce out the ticketMap into the priorty map as a tuple, but I imagine this would increase search time for the relevant ticket count given you now how to do a k sized search where k is the number of outgoing node connections for any given n every time you want a ticket count.
+
+The fastest solution is listed below per the solutions page of Leetcode:
+```js
+/**
+ * @param {string[][]} tickets
+ * @return {string[]}
+ */
+var findItinerary = function(tickets) {
+    const graph = {};
+    
+    for (const [src, dst] of tickets) {
+        if (!graph[src]) graph[src] = [];
+        graph[src].push(dst);
+    }
+    
+    for (const key in graph) {
+        graph[key].sort().reverse();
+    }
+    
+    const itinerary = [];
+    
+    function dfs(airport) {
+        while (graph[airport] && graph[airport].length > 0) {
+            dfs(graph[airport].pop());
+        }
+        itinerary.push(airport);
+    }
+    
+    dfs("JFK");
+    
+    return itinerary.reverse();
+};
+```
+
+This approach is really cool. 
+
+Lets walk through what it does:
+- It builds a map of every source node with an array of all destination nodes, then reverse lexigraphically sorts them so that the 'smallest' destination is at the end of the array, so it can easily be popped off.
+- Starting at JFK, it looks at what JFKs lexigraphically smallest destination node is and goes there, popping it off JFK's destination stack. It has no intention of re-adding it back if this path doesn't work.
+- We now have a new recursive scope, where the current source node is whatever JFK's closest destination was. Repeat this process...
+- Keep repeating until we hit a node that has 0 outgoing destinations. This node has to be the end of our itinerary. Push it to the itinerary and return.
+- If the scope we returned into doesn't have any more outgoing nodes, we can also add this node to the end of the itinerary, otherwise, DFS the next node in the list.
+- Eventually, the itineray will build out, but its in reverse order, so we need to reverse it and return it.
+
+Heres some photos below to show how it all works with increasing complexity:
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/reconstructItineraryRecursive1.png" alt="reconstructItineraryRecursive1" />
+
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/reconstructItineraryRecursive2.png" alt="reconstructItineraryRecursive2" />
