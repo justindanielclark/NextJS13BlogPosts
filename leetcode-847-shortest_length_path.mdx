@@ -1,0 +1,94 @@
+---
+title: "Leetcode 847: Shortest Length Path"
+date: '2023-09-18'
+tags: ['leetcode', 'hard']
+---
+
+## The Problem:
+
+You have an undirected, connected graph of n nodes labeled from 0 to n - 1. You are given an array graph where graph[i] is a list of all the nodes connected with node i by an edge.
+
+Return the length of the shortest path that visits every node. You may start and stop at any node, you may revisit nodes multiple times, and you may reuse edges.
+
+#### Example 1:
+- Input: graph = [[1,2,3],[0],[0],[0]]
+- Output: 4
+- Explanation: One possible path is [1,0,2,0,3]
+
+#### Example 2:
+- Input: graph = [[1],[0,2,4],[1,3,4],[2],[1,2]]
+- Output: 4
+- Explanation: One possible path is [0,1,4,2,3] 
+
+#### Constraints:
+- n == graph.length
+- 1 \<= n \<= 12
+- 0 \<= graph[i].length \< n
+- graph[i] does not contain i.
+- If graph[a] contains b, then graph[b] contains a.
+- The input graph is always connected.
+
+## The Solution: 
+
+Took a BFS approach as any its impossible to know which node to start with. Approach was to visit any node provided that node hadn't been visited more times than it had connections. Works, but likely is slow due to know cache for visits that are 'unneeded'. If I were to do this again or more optimally, I would introduce a bitmask to track visited nodes rather than using an array. I would also use a set to track which paths have already visited which nodes so I didn't have duplicate paths being explored.
+
+```ts
+//Sample Input
+// graph = [[1,2,3],[0],[0],[0]]
+// Expect: 5
+type Route = {
+  timesVisited: number[]; // How Many Times Each Node Has Been Visited, Heuristic To Prevent Visiting A Node More Times Than It Has Possible Paths
+  sequence: number[]; // The Order Of Nodes Visited
+};
+function traverse(graph: number[][]): number {
+  let found = false;
+  let routes: Route[] = [];
+  //Initialize Routes With A Starting Sequence Of Each Possible Node
+  graph.forEach((node, idx) => {
+    routes.push({
+      timesVisited: new Array(graph.length).fill(0),
+      sequence: [idx],
+    });
+    routes[routes.length - 1].timesVisited[idx] = 1;
+  });
+  // Flag Variable, After While Loop Exits, Holds What The 'Winning Path' was
+  let routeIdx: number = 0;
+  // BFS
+  while (!found) {
+    // Temp Array Of All New Routes, Replaces current routes at end
+    let newRoutes: Route[] = [];
+    // Iterate Over Existing Routes, look at each possible next node from current position
+    routes.forEach((route) => {
+      graph[route.sequence[route.sequence.length - 1]].forEach((possibleNextNode) => {
+        //As long as visiting it doesn't revisit a node more times than it has paths, add it to newRoutes
+        if (route.timesVisited[possibleNextNode] + 1 <= graph[possibleNextNode].length && !found) {
+          newRoutes.push({ timesVisited: [...route.timesVisited], sequence: [...route.sequence] });
+          newRoutes[newRoutes.length - 1].sequence.push(possibleNextNode);
+          newRoutes[newRoutes.length - 1].timesVisited[possibleNextNode] =
+            newRoutes[newRoutes.length - 1].timesVisited[possibleNextNode] + 1;
+            //If All Nodes have been visited, set the flag variable to the winning route, exit
+          if (allAreVisited(newRoutes[newRoutes.length - 1].timesVisited)) {
+            found = true;
+            routes = newRoutes;
+            routeIdx = newRoutes.length - 1;
+          }
+        }
+      });
+    });
+    routes = newRoutes;
+  }
+  return routes[routeIdx].sequence.length - 1;
+
+  //Simple function. Check Every Visited Idx In A Route Path To See If We've Been There. If We Reach Any Node We Haven't Been To, We Can Leave Early
+  // And Return False. Otherwise, Return True
+  function allAreVisited(visited: number[]) {
+    let i = 0;
+    while (i < visited.length) {
+      if (visited[i] === 0) return false;
+      i++;
+    }
+    return true;
+  }
+}
+
+```
