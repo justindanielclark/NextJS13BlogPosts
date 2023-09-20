@@ -156,4 +156,55 @@ function minOperations(nums: number[], x: number): number {
 
 This works really well.... until it doesn't. Mostly, it fails because it can take a path at the onset that ultimately leads no where, and then it has to explore every possible route along it to find out it wasn't going to be the thing that worked for it.
 
-I looked at the optimal solution, and it makes total sense. Next time. Trying not to kill my whole day working on these anymore.
+I looked at the optimal solution, and it makes total sense. Here is the reasoning behind it:
+- X must be smaller than the total sum of nums, otherwise this isn't possible
+- Any numbers leftover after x is removed must necessarily be the \(sum of nums - x\)
+- If we want the least number of operations to achieve this, assuming we can only remove items from the left and then the right, what we actually want is the biggest possible range from l to r
+- This is a sliding window problem. Set two pointers, record the positions when that sum is equal to a target and do a comparison check
+- We can calculate the number of comparisons by this: (left + nums.length - 1 - right)
+
+```ts
+function minOperations(nums: number[], x: number): number {
+  let sum = 0;
+  for (let i = 0; i < nums.length; i++) {
+    sum += nums[i];
+  }
+  if (sum < x) return -1;
+  const TARGET = sum - x;
+  if (TARGET === 0) return nums.length;
+  let [left, right] = [0, 0];
+  let range_sum = nums[0];
+  let bestPerformance = Number.MAX_SAFE_INTEGER;
+
+  while (right < nums.length) {
+    if (left === right) {
+      if (range_sum === TARGET) {
+        bestPerformance = Math.min(bestPerformance, left + nums.length - 1 - right);
+        right++;
+        range_sum += nums[right];
+        continue;
+      }
+      right++;
+      range_sum += nums[right];
+      continue;
+    }
+    if (range_sum > TARGET) {
+      range_sum -= nums[left];
+      left++;
+      continue;
+    }
+    if (range_sum < TARGET) {
+      right++;
+      range_sum += nums[right];
+      continue;
+    }
+    if (range_sum === TARGET) {
+      bestPerformance = Math.min(bestPerformance, left + nums.length - 1 - right);
+      range_sum -= nums[left];
+      left++;
+      continue;
+    }
+  }
+  return bestPerformance === Number.MAX_SAFE_INTEGER ? -1 : bestPerformance;
+}
+```
