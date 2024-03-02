@@ -1,0 +1,153 @@
+---
+title: "Leetcode 977: Squares of A Sorted Array"
+date: '2023-03-2'
+tags: ['leetcode', 'easy']
+---
+
+## The Problem:
+
+Given an integer array nums sorted in non-decreasing order, return an array of the squares of each number sorted in non-decreasing order.
+
+#### Example 1:
+- Input: nums = [-4,-1,0,3,10]
+- Output: [0,1,9,16,100]
+- Explanation: After squaring, the array becomes [16,1,0,9,100]. After sorting, it becomes [0,1,9,16,100].
+#### Example 2:
+- Input: nums = [-7,-3,2,3,11]
+- Output: [4,9,9,49,121]
+#### Constraints:
+- 1 \<= nums.length \<= 104
+- \-104 \<= nums[i] \<= 104
+- nums is sorted in non-decreasing order.
+
+## The Solution:
+
+Trivial solution is to simply square them all and sort. Faster solution is to have a minheap and then simply unravel the heap. I had a min-heap implementation lying around on my Github so I used it here. Would be even faster if I didn't have to turn the numbers into a comparable object to get it to work, but it worked just fine. A minheap that can only compare numbers isn't all that flexible of a heap.
+
+```ts
+function sortedSquares(nums: number[]): number[] {
+    const comparableNums: Num[] = nums.map(n => new Num(Math.abs(n))); // Time: O(n), Space O(n);
+    const minHeap = new MinHeap<Num>(comparableNums); // Time: O(n) (average), Space O(n)
+    const sorted: number[] = [];
+    let removed = minHeap.remove();
+    while(removed !== null){ // Time O(n)
+        sorted.push(removed.value * removed.value);
+        removed = minHeap.remove()
+    }
+    return sorted;
+};
+
+interface Stringable {
+  toString: () => string;
+}
+interface Comparable<T> {
+  compareTo: (item: T) => 0 | 1 | -1;
+}
+class MinHeap<T extends Comparable<T> & Stringable> implements Stringable {
+  private _heap: T[];
+  public constructor(arr?: T[]) {
+    this._heap = [];
+    if (arr) {
+      arr.forEach((item) => this.add(item));
+    }
+  }
+  private _getLeftChildIndex(parentIndex: number): number {
+    return 2 * parentIndex + 1;
+  }
+  private _getRightChildIndex(parentIndex: number): number {
+    return 2 * parentIndex + 2;
+  }
+  private _getParentIndex(childIndex: number): number {
+    return Math.floor((childIndex - 1) / 2);
+  }
+  private _hasLeftChild(index: number): boolean {
+    return this._getLeftChildIndex(index) < this._heap.length;
+  }
+  private _hasRightChild(index: number): boolean {
+    return this._getRightChildIndex(index) < this._heap.length;
+  }
+  private _hasParent(index: number): boolean {
+    return this._getParentIndex(index) >= 0;
+  }
+  private _leftChild(index: number): T {
+    return this._heap[this._getLeftChildIndex(index)];
+  }
+  private _rightChild(index: number): T {
+    return this._heap[this._getRightChildIndex(index)];
+  }
+  private _parent(index: number): T {
+    return this._heap[this._getParentIndex(index)];
+  }
+  private _swap(indexOne: number, indexTwo: number): void {
+    const temp = this._heap[indexOne];
+    this._heap[indexOne] = this._heap[indexTwo];
+    this._heap[indexTwo] = temp;
+  }
+
+  private _heapifyUp() {
+    let index = this._heap.length - 1;
+    while (this._hasParent(index) && this._parent(index).compareTo(this._heap[index]) === 1) {
+      this._swap(this._getParentIndex(index), index);
+      index = this._getParentIndex(index);
+    }
+  }
+  private _heapifyDown() {
+    let index = 0;
+    while (this._hasLeftChild(index)) {
+      let smallerChildIndex = this._getLeftChildIndex(index);
+      if (this._hasRightChild(index) && this._rightChild(index).compareTo(this._leftChild(index)) === -1) {
+        smallerChildIndex = this._getRightChildIndex(index);
+      }
+      if (this._heap[index].compareTo(this._heap[smallerChildIndex]) === -1) {
+        break;
+      } else {
+        this._swap(index, smallerChildIndex);
+      }
+      index = smallerChildIndex;
+    }
+  }
+
+  public add(item: T): void {
+    this._heap.push(item);
+    this._heapifyUp();
+  }
+  public remove() {
+    if (this._heap.length === 0) {
+      return null;
+    }
+    const item = this._heap[0];
+    this._heap[0] = this._heap[this._heap.length - 1];
+    this._heap.pop();
+    this._heapifyDown();
+    return item;
+  }
+
+  public toString(): string {
+    if (this._heap.length === 0) return "The Min Heap is Empty";
+    let returnable = "[";
+    this._heap.forEach((item, idx, arr) => {
+      if (idx !== arr.length - 1) {
+        returnable += ` ${item.toString()} ,`;
+      } else {
+        returnable += ` ${item.toString()} ]`;
+      }
+    });
+    return returnable;
+  }
+}
+
+class Num implements Comparable<Num>, Stringable {
+  public value;
+  public constructor(number: number) {
+    this.value = number;
+  }
+  public compareTo(compared: Num): 1 | -1 | 0 {
+    if (this.value > compared.value) return 1;
+    if (this.value < compared.value) return -1;
+    return 0;
+  }
+  public toString(): string {
+    return this.value.toString();
+  }
+}
+```

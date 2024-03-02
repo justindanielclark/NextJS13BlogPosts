@@ -1,0 +1,15 @@
+---
+title: "Leetcode 392: Is Subsequence"
+date: '2023-09-22'
+tags: ['leetcode', 'easy']
+---
+
+```ts
+function isSubsequence(s: string, t: string): boolean {
+  let curr = 0;
+  for (let i = 0; i < t.length; i++) {
+    if (t.substring(i, i + 1) === s.substring(curr, curr + 1)) curr++;
+  }
+  return curr >= s.length;
+}
+```
