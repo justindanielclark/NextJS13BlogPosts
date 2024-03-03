@@ -1,0 +1,72 @@
+---
+title: "Leetcode 19: Remove Nth Node From End of List"
+date: '2024-03-03'
+tags: ['leetcode', 'medium']
+---
+
+## The Problem:
+
+Given the head of a linked list, remove the nth node from the end of the list and return its head.
+
+Follow up: Could you do this in one pass?
+
+#### Example 1:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/leetcode19.jpg" alt="leetcode19" />
+- Input: head = [1,2,3,4,5], n = 2
+- Output: [1,2,3,5]
+#### Example 2:
+- Input: head = [1], n = 1
+- Output: []
+#### Example 3:
+- Input: head = [1,2], n = 1
+- Output: [1]
+ 
+#### Constraints:
+The number of nodes in the list is sz.
+- 1 \<= sz \<= 30
+- 0 \<= Node.val \<= 100
+- 1 \<= n \<= sz
+
+## The Solution:
+
+Because we are not being passed a reference to the head of a list rather than a list object that keeps track of its length, to work from the tail we have to iterate thru the whole thing once to figure out how long it is in the first place. If we only want to do 1 loop, then we need to index each node by storing their references in an indexable datastructure. In this case, we can use an array. If you wanted to be really effectient, you could only store as many items as n is large, but I didn't really worry about that. From there we just link and then unlink with our mind paying attention for a few cases that have special behaviors.
+
+Code is below:
+
+```ts
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val?: number, next?: ListNode | null) {
+    this.val = val === undefined ? 0 : val;
+    this.next = next === undefined ? null : next;
+  }
+}
+
+function removeNthFromEnd(head: ListNode | null, n: number): ListNode | null {
+  if (n === 0) {
+    return head;
+  }
+  //Convert Linked List to Array, so we can now backtrack and know the length of the list
+  const arr: ListNode[] = [];
+  let curr = head;
+  while (curr) {
+    arr.push(curr);
+    curr = curr.next;
+  }
+  //EDGE CASES:
+  // Only a head as a node, and asked to remove it
+  if (n === 1 && arr.length === 1) {
+    return null;
+  }
+  // Asked to remove head
+  if (n === arr.length) {
+    return arr[1];
+  }
+  //STANDARD CASE
+  const removed = arr[arr.length - n];
+  const parent = arr[arr.length - n - 1];
+  parent.next = removed.next;
+  return head;
+}
+```
