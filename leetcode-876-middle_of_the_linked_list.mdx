@@ -1,0 +1,78 @@
+---
+title: "Leetcode 876 - Middle Of The Linked List"
+date: '2024-03-07'
+tags: ['leetcode', 'easy']
+---
+
+## The Problem:
+
+Given the head of a singly linked list, return the middle node of the linked list.
+
+If there are two middle nodes, return the second middle node.
+
+## Examples
+
+#### Example 1:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/876LinkedListImg1.jpg" alt="LinkedListImg1" />
+Input: head = [1,2,3,4,5]
+Output: [3,4,5]
+Explanation: The middle node of the list is node 3.
+
+#### Example 2:
+<CustomImage src="https://raw.githubusercontent.com/justindanielclark/NextJS13BlogPosts/main/images/876LinkedListImg2.jpg" alt="LinkedListImg2" />
+Input: head = [1,2,3,4,5,6]
+Output: [4,5,6]
+Explanation: Since the list has two middle nodes with values 3 and 4, we return the second one.
+ 
+## Constraints:
+- The number of nodes in the list is in the range [1, 100].
+- 1 \<= Node.val \<= 100
+
+Not a lot to say about this one. I had a runner determine the length of the list. Then iterated to find the middle point that the question asked for.
+
+Alternative way is to use O(n) space to create an array and then just check its indexing for the specified point, but I have a feeling that would be slower.
+
+```ts
+class ListNode {
+  val: number;
+  next: ListNode | null;
+  constructor(val?: number, next?: ListNode | null) {
+    this.val = val === undefined ? 0 : val;
+    this.next = next === undefined ? null : next;
+  }
+}
+function middleNode(head: ListNode | null): ListNode | null {
+  if(head === null) return null;
+
+  let count = 1;
+  let curr = head;
+  while(curr.next){
+    count++;
+    curr = curr.next;
+  }
+  const isEven = count % 2 === 0;
+  let countTo = isEven ? (count / 2) + 1 : Math.ceil(count/2);
+
+  count = 1;
+  curr = head;
+  while(count !== countTo){
+    count++;
+    curr = curr.next
+  }
+  return curr;
+}
+```
+
+Highest preforming approach was clever in that it just had the middle half as fast as the end pointers:
+
+```ts
+function middleNode(head: ListNode | null): ListNode | null {
+    let middle: ListNode = head;
+    let end: ListNode = head;
+    while(end != null && end.next !== null) {
+        middle = middle.next;
+        end = end.next.next;
+    }
+    return middle;
+};
+```
